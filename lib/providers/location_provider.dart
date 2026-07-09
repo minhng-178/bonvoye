@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import '../models/city.dart';
+import '../models/country.dart';
+import '../models/custom_map_overlay.dart';
 import '../models/npc.dart';
 import '../models/topic.dart';
 import '../utils/haversine.dart';
@@ -24,7 +27,9 @@ class LocationProvider extends ChangeNotifier {
 
   String _searchQuery = '';
   ZoneType? _selectedZoneType;
-  Topic _selectedTopic = mockTopics.first;
+  Country _selectedCountry = mockCountries.first;
+  City _selectedCity = mockCountries.first.cities.first;
+  Topic _selectedTopic = mockCountries.first.cities.first.topics.first;
 
   // Tracks which set of NPC ids were in range as of the last check, so we
   // only re-evaluate (auto-open or show the chooser) when that set actually
@@ -42,6 +47,11 @@ class LocationProvider extends ChangeNotifier {
   List<MapEntry<NPC, double>>? _npcsSortedByDistanceCache;
   List<MapEntry<NPC, double>>? _visibleNpcsCache;
 
+  // NPCs whose story has actually been opened, most-recent-first, deduped by
+  // id - backs the Hành Trình tab. Distinct from `HiddenThread.isUnlocked`,
+  // which tracks unlocking within an already-opened story.
+  final List<NPC> _visitedNpcs = [];
+
   Timer? _searchDebounceTimer;
 
   double get userLatitude => _userLatitude;
@@ -51,9 +61,17 @@ class LocationProvider extends ChangeNotifier {
   bool get shouldShowTriggerPopup => _shouldShowTriggerPopup;
   String get searchQuery => _searchQuery;
   ZoneType? get selectedZoneType => _selectedZoneType;
+  Country get selectedCountry => _selectedCountry;
+  City get selectedCity => _selectedCity;
   Topic get selectedTopic => _selectedTopic;
   bool get shouldShowChooser => _shouldShowChooser;
   List<MapEntry<NPC, double>> get chooserCandidates => _chooserCandidates;
+  List<NPC> get visitedNpcs => List.unmodifiable(_visitedNpcs);
+
+  void _markVisited(NPC npc) {
+    _visitedNpcs.removeWhere((n) => n.id == npc.id);
+    _visitedNpcs.insert(0, npc);
+  }
 
   // Flattened list of NPCs belonging to the selected topic. Cached and only
   // recomputed when the selected topic changes.
@@ -64,6 +82,21 @@ class LocationProvider extends ChangeNotifier {
       npcs.addAll(poi.npcs);
     }
     return _allNpcsCache = npcs;
+  }
+
+  /// The custom map overlay whose bounds the user's current position falls
+  /// within, if any - null means the real map tiles should show as normal.
+  /// Deliberately uncached: the POI list per topic is small, so a linear
+  /// scan on every position update is cheap, and caching a nullable result
+  /// would need an extra "computed vs. not" flag for no real benefit.
+  CustomMapOverlay? get activeCustomMapOverlay {
+    for (final poi in _selectedTopic.pois) {
+      final overlay = poi.customMapOverlay;
+      if (overlay != null && overlay.contains(_userLatitude, _userLongitude)) {
+        return overlay;
+      }
+    }
+    return null;
   }
 
   /// Returns NPCs sorted by distance from the user. Cached and only
@@ -152,6 +185,18 @@ class LocationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setCity(City city) {
+    if (_selectedCity.id == city.id) return;
+    _selectedCity = city;
+    setTopic(city.topics.first);
+    notifyListeners();
+  }
+
+  void setCountry(Country country) {
+    _selectedCountry = country;
+    setCity(country.cities.first);
+  }
+
   void toggleSimulationMode() {
     _isSimulationMode = !_isSimulationMode;
     notifyListeners();
@@ -182,6 +227,7 @@ class LocationProvider extends ChangeNotifier {
   void selectNPC(NPC npc) {
     _activeNPC = npc;
     _shouldShowTriggerPopup = true; // Show story view
+    _markVisited(npc);
     notifyListeners();
   }
 
@@ -201,6 +247,7 @@ class LocationProvider extends ChangeNotifier {
     _activeNPC = npc;
     _shouldShowTriggerPopup = true;
     _shouldShowChooser = false;
+    _markVisited(npc);
     notifyListeners();
   }
 
@@ -238,6 +285,7 @@ class LocationProvider extends ChangeNotifier {
       _activeNPC = inRange.first.key;
       _shouldShowTriggerPopup = true;
       _shouldShowChooser = false;
+      _markVisited(_activeNPC!);
     } else {
       _chooserCandidates = inRange;
       _shouldShowChooser = true;

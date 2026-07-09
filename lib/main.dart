@@ -1,4 +1,4 @@
-import 'package:bonvoye/screens/main_narrative_screen.dart';
+import 'package:bonvoye/screens/root_shell_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/location_provider.dart';
@@ -19,7 +19,7 @@ class BonVoyeApp extends StatelessWidget {
         title: 'BonVoye - Storytelling',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
-        home: const MainNarrativeScreen(),
+        home: const RootShellScreen(),
       ),
     );
   }

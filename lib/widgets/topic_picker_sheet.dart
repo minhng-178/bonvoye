@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/topic.dart';
 
-IconData _iconFor(TopicIcon icon) {
+/// Maps a [TopicIcon] to the concrete glyph it renders as - shared by the
+/// topic picker sheet and the Explore tab's topic list.
+IconData iconForTopic(TopicIcon icon) {
   switch (icon) {
     case TopicIcon.autoStories:
       return Icons.auto_stories;
@@ -95,7 +97,7 @@ class TopicPickerSheet extends StatelessWidget {
                               color: colorScheme.secondaryContainer,
                             ),
                             child: Icon(
-                              _iconFor(topic.icon),
+                              iconForTopic(topic.icon),
                               color: colorScheme.secondary,
                             ),
                           ),

@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../providers/location_provider.dart';
+import '../models/custom_map_overlay.dart';
 import '../models/npc.dart';
 import '../utils/image_utils.dart';
 import '../utils/constants.dart';
@@ -31,6 +32,7 @@ typedef _MapViewData = ({
   NPC? activeNPC,
   bool shouldShowChooser,
   List<MapEntry<NPC, double>> chooserCandidates,
+  CustomMapOverlay? activeCustomMapOverlay,
 });
 
 class _MapViewState extends State<MapView> {
@@ -117,6 +119,7 @@ class _MapViewState extends State<MapView> {
         activeNPC: provider.activeNPC,
         shouldShowChooser: provider.shouldShowChooser,
         chooserCandidates: provider.chooserCandidates,
+        activeCustomMapOverlay: provider.activeCustomMapOverlay,
       ),
       builder: (context, data, child) {
         final provider = context.read<LocationProvider>();
@@ -252,6 +255,31 @@ class _MapViewState extends State<MapView> {
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.bonvoye.app',
             ),
+            // Custom Map Mode: pins a custom image over the real tiles,
+            // anchored to real coordinates, while the user is inside a
+            // POI's declared overlay bounds. Must come after TileLayer (per
+            // OverlayImageLayer's own doc comment) and before MarkerLayer so
+            // NPC pins stay tappable on top of it.
+            if (data.activeCustomMapOverlay != null)
+              OverlayImageLayer(
+                overlayImages: [
+                  OverlayImage(
+                    bounds: LatLngBounds(
+                      LatLng(
+                        data.activeCustomMapOverlay!.northLat,
+                        data.activeCustomMapOverlay!.westLng,
+                      ),
+                      LatLng(
+                        data.activeCustomMapOverlay!.southLat,
+                        data.activeCustomMapOverlay!.eastLng,
+                      ),
+                    ),
+                    imageProvider: getSafeImageProvider(
+                      data.activeCustomMapOverlay!.imageUrl,
+                    ),
+                  ),
+                ],
+              ),
             MarkerLayer(markers: markers),
           ],
         );

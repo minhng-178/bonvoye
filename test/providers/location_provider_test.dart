@@ -1,7 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bonvoye/providers/location_provider.dart';
+import 'package:bonvoye/models/city.dart';
+import 'package:bonvoye/models/country.dart';
 import 'package:bonvoye/models/npc.dart';
 import 'package:bonvoye/models/story.dart';
+import 'package:bonvoye/models/topic.dart';
 
 void main() {
   group('LocationProvider proximity triggers', () {
@@ -151,6 +154,97 @@ void main() {
 
         expect(provider.searchQuery, 'Thần Kim Quy');
         expect(provider.visibleNpcsSortedByDistance.length, 1);
+      },
+    );
+  });
+
+  group('LocationProvider Country/City selection', () {
+    late LocationProvider provider;
+
+    setUp(() {
+      provider = LocationProvider();
+    });
+
+    Topic buildTopic(String id) => Topic(
+      id: id,
+      title: 'Topic $id',
+      description: 'desc',
+      icon: TopicIcon.autoStories,
+      pois: const [],
+    );
+
+    City buildCity(String id, List<Topic> topics) => City(
+      id: id,
+      name: 'City $id',
+      description: 'desc',
+      centerLatitude: 0,
+      centerLongitude: 0,
+      topics: topics,
+    );
+
+    test(
+      'setCity switches the selected topic to the new city\'s first topic',
+      () {
+        final newCity = buildCity('city_test', [
+          buildTopic('topic_a'),
+          buildTopic('topic_b'),
+        ]);
+
+        provider.setCity(newCity);
+
+        expect(provider.selectedCity, newCity);
+        expect(provider.selectedTopic.id, 'topic_a');
+      },
+    );
+
+    test(
+      'setCountry cascades into the country\'s first city and its first topic',
+      () {
+        final country = Country(
+          id: 'country_test',
+          name: 'Country Test',
+          description: 'desc',
+          cities: [
+            buildCity('city_a', [buildTopic('topic_a')]),
+            buildCity('city_b', [buildTopic('topic_b')]),
+          ],
+        );
+
+        provider.setCountry(country);
+
+        expect(provider.selectedCountry, country);
+        expect(provider.selectedCity.id, 'city_a');
+        expect(provider.selectedTopic.id, 'topic_a');
+      },
+    );
+  });
+
+  group('LocationProvider Custom Map Mode', () {
+    late LocationProvider provider;
+
+    setUp(() {
+      provider = LocationProvider();
+    });
+
+    test(
+      'activeCustomMapOverlay is null outside every POI\'s overlay bounds',
+      () {
+        // The default start position, well clear of Đền Ngọc Sơn's demo
+        // overlay rectangle.
+        provider.updateLocation(21.0325, 105.8524);
+
+        expect(provider.activeCustomMapOverlay, isNull);
+      },
+    );
+
+    test(
+      'activeCustomMapOverlay returns the demo overlay inside its bounds',
+      () {
+        // Đền Ngọc Sơn's own coordinate, inside its demo overlay rectangle.
+        provider.updateLocation(21.0294, 105.8524);
+
+        expect(provider.activeCustomMapOverlay, isNotNull);
+        expect(provider.activeCustomMapOverlay!.imageUrl, isNotEmpty);
       },
     );
   });

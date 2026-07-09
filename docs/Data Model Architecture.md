@@ -1,5 +1,11 @@
 ## **06. DATA MODEL ARCHITECTURE**
 
+**Status: implemented** (as part of the navigation-shell/Custom-Map-Mode pass — see
+`docs/08. Navigation & Custom Map Mode.md` §1). `Country`/`City` exist in `lib/models/`,
+`mock_data.dart` exports `mockCountries`, and `LocationProvider` has
+`setCountry`/`setCity`. The rest of this document is kept as the historical spec for that
+work, not a pending plan.
+
 Engineering spec for reshaping `lib/models/` to match the content hierarchy defined in
 [`Content Architecture.md`](Content%20Architecture.md):
 `Country → City → Topic → POI → NPC → Story → Hidden Threads`.

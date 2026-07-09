@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../data/mock_data.dart';
 import '../providers/location_provider.dart';
+import '../models/city.dart';
 import '../models/npc.dart';
 import '../models/topic.dart';
 import '../utils/image_utils.dart';
@@ -72,12 +72,17 @@ class NearbyList extends StatelessWidget {
                 child:
                     Selector<
                       LocationProvider,
-                      ({int visibleCount, Topic selectedTopic})
+                      ({
+                        int visibleCount,
+                        Topic selectedTopic,
+                        City selectedCity,
+                      })
                     >(
                       selector: (context, provider) => (
                         visibleCount:
                             provider.visibleNpcsSortedByDistance.length,
                         selectedTopic: provider.selectedTopic,
+                        selectedCity: provider.selectedCity,
                       ),
                       builder: (context, data, child) {
                         final visibleCount = data.visibleCount;
@@ -96,7 +101,7 @@ class NearbyList extends StatelessWidget {
                                     alpha: 0.2,
                                   ),
                                   builder: (context) => TopicPickerSheet(
-                                    topics: mockTopics,
+                                    topics: data.selectedCity.topics,
                                     selectedTopicId: provider.selectedTopic.id,
                                     onSelect: (topic) {
                                       Navigator.pop(context);

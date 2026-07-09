@@ -1,3 +1,4 @@
+import 'custom_map_overlay.dart';
 import 'npc.dart';
 
 class POI {
@@ -9,6 +10,11 @@ class POI {
   final List<NPC> npcs;
   final String? imageUrl;
 
+  /// When set, the map switches to this custom-drawn overlay while the user
+  /// is within its bounds, instead of the real map tiles. Most POIs don't
+  /// have one.
+  final CustomMapOverlay? customMapOverlay;
+
   POI({
     required this.id,
     required this.title,
@@ -17,6 +23,7 @@ class POI {
     required this.longitude,
     required this.npcs,
     this.imageUrl,
+    this.customMapOverlay,
   });
 
   factory POI.fromJson(Map<String, dynamic> json) {
@@ -36,6 +43,11 @@ class POI {
       longitude: (json['longitude'] as num).toDouble(),
       npcs: npcObjects,
       imageUrl: json['imageUrl'] as String?,
+      customMapOverlay: json['customMapOverlay'] != null
+          ? CustomMapOverlay.fromJson(
+              json['customMapOverlay'] as Map<String, dynamic>,
+            )
+          : null,
     );
   }
 
@@ -48,6 +60,7 @@ class POI {
       'longitude': longitude,
       'npcs': npcs.map((n) => n.toJson()).toList(),
       'imageUrl': imageUrl,
+      'customMapOverlay': customMapOverlay?.toJson(),
     };
   }
 }

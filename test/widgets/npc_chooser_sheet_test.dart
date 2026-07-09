@@ -60,7 +60,7 @@ void main() {
 
       await _pump(tester, candidates);
 
-      expect(find.text('Tòa nhà nhiều tầng'), findsOneWidget);
+      expect(find.text('Chọn tầng để khám phá'), findsOneWidget);
       expect(find.text('Tầng hầm'), findsOneWidget);
       expect(find.text('Tầng 1'), findsOneWidget);
       final distanceLike = RegExp(r'^\d+ m$');
@@ -89,7 +89,10 @@ void main() {
 
     await _pump(tester, candidates);
 
-    expect(find.text('Có nhiều người gần bạn'), findsOneWidget);
+    expect(
+      find.text('Có 2 người đang ở gần bạn — chọn người bạn muốn gặp.'),
+      findsOneWidget,
+    );
     expect(find.text('3 m'), findsOneWidget);
     expect(find.text('12 m'), findsOneWidget);
   });
