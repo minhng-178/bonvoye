@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "dart": {
+      "command": "dart",
+      "args": [
+        "mcp-server",
+        "--flutter-sdk",
+        "/Users/hd-569/Documents/flutter"
+      ]
+    }
+  }
+}
