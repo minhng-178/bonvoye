@@ -5,8 +5,29 @@ import 'package:provider/provider.dart';
 import 'package:bonvoye/widgets/map_view.dart';
 import 'package:bonvoye/widgets/map_top_bar.dart';
 import 'package:bonvoye/widgets/nearby_list.dart';
+import 'package:bonvoye/widgets/webtoon_dialogue_demo.dart';
+import 'package:bonvoye/widgets/fake_gps_drag_demo.dart';
+import '../data/mock_data.dart';
+import '../models/npc.dart';
 import '../providers/location_provider.dart';
 import '../utils/constants.dart';
+
+/// Walks the mock data tree for the "webtoon động" concept demo - picks the
+/// richest legend NPC so the typewriter-dialogue effect has good material.
+NPC _findDemoNpc() {
+  for (final country in mockCountries) {
+    for (final city in country.cities) {
+      for (final topic in city.topics) {
+        for (final poi in topic.pois) {
+          for (final npc in poi.npcs) {
+            if (npc.id == 'npc_than_kim_quy') return npc;
+          }
+        }
+      }
+    }
+  }
+  return mockCountries.first.cities.first.topics.first.pois.first.npcs.first;
+}
 
 class MainNarrativeScreen extends StatefulWidget {
   const MainNarrativeScreen({super.key});
@@ -63,6 +84,53 @@ class _MainNarrativeScreenState extends State<MainNarrativeScreen> {
                 );
                 _mapController.move(userPos, _mapController.camera.zoom);
               },
+            ),
+          ),
+
+          // Temporary demo entry point for the "webtoon động" concept -
+          // opens a fullscreen typewriter-dialogue demo over a real NPC.
+          Positioned(
+            left: 16,
+            bottom: 16,
+            child: FloatingActionButton.small(
+              heroTag: 'demoWebtoon',
+              onPressed: () {
+                // Push on the root Navigator (not the tab's nested one) so
+                // the modal covers the bottom NavigationBar too, like a real
+                // interstitial rather than just replacing the tab's body.
+                Navigator.of(context, rootNavigator: true).push(
+                  MaterialPageRoute(
+                    fullscreenDialog: true,
+                    builder: (context) => WebtoonDialogueDemo(
+                      npc: _findDemoNpc(),
+                      onClose: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                );
+              },
+              child: const Icon(Icons.auto_stories),
+            ),
+          ),
+
+          // Temporary demo entry point for the Fake GPS drag + auto-reset
+          // mockup (docs/app-core-text-diagram.md PHẦN 4-5) - stacked above
+          // the webtoon demo FAB.
+          Positioned(
+            left: 16,
+            bottom: 76,
+            child: FloatingActionButton.small(
+              heroTag: 'demoFakeGps',
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).push(
+                  MaterialPageRoute(
+                    fullscreenDialog: true,
+                    builder: (context) => FakeGpsDragDemo(
+                      onClose: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                );
+              },
+              child: const Icon(Icons.gps_not_fixed),
             ),
           ),
         ],
