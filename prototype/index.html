@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BonVoye — Prototype App Core</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<div class="workbench">
+
+  <!-- ═══ RAIL: nhảy trực tiếp tới từng màn ═══════════════════════════════ -->
+  <nav class="rail">
+    <div class="rail-brand">
+      <b>BonVoye</b>
+      <span>Prototype App Core · tiếng Việt</span>
+    </div>
+    <div id="rail-list"></div>
+    <div class="rail-note">
+      Mỗi màn ánh xạ về một PHẦN của <code>docs/app-core-text-diagram.md</code>.
+      Con số lấy nguyên từ PHẦN 11 — xem tab <b>Số</b> ở Inspector.
+    </div>
+  </nav>
+
+  <!-- ═══ SÂN KHẤU: khung điện thoại ══════════════════════════════════════ -->
+  <main class="stage">
+    <div class="device">
+      <div class="island"></div>
+      <div class="screen" id="screen"></div>
+    </div>
+    <div class="stage-bar" id="stage-bar"></div>
+  </main>
+
+  <!-- ═══ INSPECTOR: máy trạng thái chạy live ═════════════════════════════ -->
+  <aside class="inspector">
+    <div class="insp-head">
+      <b>Inspector</b>
+      <p>Ba máy trạng thái chạy thật. Đây là phần mock tĩnh không review được
+         (PHẦN 13: “máy trạng thái không suy ra được từ mô tả UI đơn thuần”).</p>
+      <div class="insp-tabs" id="insp-tabs"></div>
+    </div>
+    <div id="insp-body"></div>
+  </aside>
+
+</div>
+
+<script src="data.js"></script>
+<script src="engine.js"></script>
+<script src="art.js"></script>
+<script src="ui.js"></script>
+</body>
+</html>

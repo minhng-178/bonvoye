@@ -1,0 +1,178 @@
+/* =============================================================================
+   BonVoye — Mockup gallery
+   Chỉ là lớp bố cục để xem NHIỀU khung điện thoại cạnh nhau. Toàn bộ giao diện
+   bên trong khung vẫn do `app.css` quyết định — file này không sửa gì của app.
+   ========================================================================== */
+
+.gal {
+  min-height: 100vh;
+  background:
+    radial-gradient(1400px 700px at 50% -5%, #232b33 0%, transparent 70%),
+    var(--bench, #14181b);
+  color: #e8eaec;
+  padding: 28px 32px 96px;
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* ── đầu trang ─────────────────────────────────────────────────────────────── */
+.gal-head { max-width: 1180px; margin: 0 auto 22px; }
+.gal-head h1 { font-size: 25px; font-weight: 800; letter-spacing: -0.02em; margin: 0; }
+.gal-head p {
+  margin: 7px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #9aa4ad;
+  max-width: 780px;
+}
+.gal-head code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* ── thanh lọc theo nhóm ───────────────────────────────────────────────────── */
+.gal-filters {
+  max-width: 1180px;
+  margin: 0 auto 26px;
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding: 12px 0;
+  background: linear-gradient(#14181b 62%, rgba(20, 24, 27, 0));
+}
+.gal-filters button {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b9c2ca;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.gal-filters button:hover { background: rgba(255, 255, 255, 0.12); }
+.gal-filters button.on {
+  background: #b4472b;
+  border-color: #b4472b;
+  color: #fff;
+}
+
+/* ── lưới các khung ────────────────────────────────────────────────────────── */
+.gal-grid {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px 34px;
+  align-items: flex-start;
+}
+
+/* Thu nhỏ khung 393×852 để xem được nhiều màn cùng lúc. Dùng transform nên
+   không ảnh hưởng layout bên trong — mọi số đo trong app giữ nguyên. */
+.gal-cell { width: 275px; }
+.gal-frame {
+  width: 275px;
+  height: 596px; /* 852 × 0.7 */
+  position: relative;
+  overflow: hidden;
+}
+.gal-frame .device {
+  transform: scale(0.7);
+  transform-origin: top left;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* xem riêng một cảnh ở cỡ thật — mockup.html#solo=<n> */
+.gal.solo .gal-cell { width: 393px; }
+.gal.solo .gal-frame { width: 393px; height: 852px; }
+.gal.solo .gal-frame .device { transform: none; }
+
+.gal-cap { margin-top: 15px; }
+.gal-cap .num {
+  display: inline-block;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #14181b;
+  background: #c9d1d8;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-right: 7px;
+}
+.gal-cap b { font-size: 13.5px; font-weight: 700; letter-spacing: -0.01em; }
+.gal-cap p {
+  margin: 5px 0 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #8d979f;
+}
+
+/* ── bề mặt bản đồ tĩnh (thay Leaflet/Mapbox trong mockup) ─────────────────── */
+.mm { position: absolute; inset: 0; overflow: hidden; background: #e8e6e1; }
+.mm-tiles { position: absolute; inset: 0; }
+.mm-tiles img {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  /* ảnh tile chưa tải thì để nền giấy nhạt, không phải ô trắng lem nhem */
+  background: #eceae5;
+}
+/* làm dịu tile cho khớp bảng màu giấy của app */
+.mm-tiles.warm img { filter: saturate(0.78) sepia(0.1) brightness(1.03) contrast(0.96); }
+
+/* Synthetic artwork fallback for flow recording. It is deliberately subtle:
+   the real GPS surface remains visible and all interaction layers stay legible. */
+.mm-art {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  transition: opacity .32s ease;
+}
+.mm-art svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mm > .mm-geofence,
+.mm > .zone,
+.mm > .lbl,
+.mm > .mk,
+.mm > .me,
+.mm > .mm-attr { z-index: 2; }
+
+.mm-attr {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  z-index: 6;
+  font-size: 8.5px;
+  color: #4a4a46;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 1px 5px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+/* Vùng tương tác, trần kéo và vị trí người dùng KHÔNG có style riêng ở đây:
+   dùng lại `.zone` / `.me` của app.css để mockup trông y hệt bản chạy thật.
+   Bán kính tính bằng mét thật chia cho mét/pixel nên vòng luôn đúng tỉ lệ. */
+.mm-geofence {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.mm-geofence polygon {
+  fill: rgba(61, 107, 142, 0.07);
+  stroke: rgba(61, 107, 142, 0.55);
+  stroke-width: 2;
+  stroke-dasharray: 11 7;
+}
+
+/* Marker/pin/nhãn cũng dùng lại `.mk`, `.mk-poi`, `.mk-npc`, `.lbl` của app.css. */

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BonVoye — Flow (bản để quay video)</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="flow.css">
+<link rel="stylesheet" href="mockup.css">
+</head>
+<body>
+
+<div class="fl" id="fl">
+
+  <!-- ═══ CỘT TRÁI: các luồng ═════════════════════════════════════════════ -->
+  <nav class="fl-rail">
+    <div class="fl-brand">
+      <b>BonVoye — Flow</b>
+      <span>Đi hết một luồng trên MỘT khung máy, để quay màn hình</span>
+    </div>
+
+    <div class="fl-flows" id="fl-flows"></div>
+
+    <div class="fl-hint">
+      <kbd>←</kbd> <kbd>→</kbd> lùi/tiến một bước<br>
+      <kbd>Space</kbd> phát / dừng luồng này<br>
+      <kbd>Shift</kbd>+<kbd>Space</kbd> phát liên tục hết 7 luồng<br>
+      <kbd>R</kbd> chế độ ghi hình (ẩn hết chữ quanh khung)<br>
+      <kbd>C</kbd> phụ đề đè lên khung (chỉ khi đang ghi hình)<br>
+      <kbd>1</kbd>–<kbd>7</kbd> nhảy thẳng tới luồng<br>
+      <kbd>Home</kbd> về bước đầu
+      <p style="margin:12px 0 0">
+        Muốn quay: bấm <kbd>R</kbd>, chỉnh cửa sổ đủ cao để khung không bị thu nhỏ,
+        rồi <kbd>Space</kbd> cho chạy tự động.
+      </p>
+    </div>
+  </nav>
+
+  <!-- ═══ SÂN KHẤU ════════════════════════════════════════════════════════ -->
+  <main class="fl-stage">
+    <div class="fl-title" id="fl-title"></div>
+
+    <div class="fl-device" id="fl-device">
+      <div class="device">
+        <div class="island"></div>
+        <div class="screen" id="fl-screen"></div>
+      </div>
+    </div>
+
+    <div class="fl-bar" id="fl-bar"></div>
+
+    <div class="fl-ctrl">
+      <button id="fl-prev" title="Lùi một bước (←)">◀</button>
+      <button class="play" id="fl-play" title="Phát / dừng luồng này (Space)">▶ Phát</button>
+      <button id="fl-next" title="Tiến một bước (→)">▶</button>
+      <span class="fl-count" id="fl-count"></span>
+      <button id="fl-all" title="Phát liên tục hết cả 7 luồng (Shift+Space)">⏩ Phát tất cả</button>
+      <button id="fl-rec" title="Chế độ ghi hình (R)">● Ghi hình</button>
+    </div>
+  </main>
+
+  <!-- ═══ CỘT PHẢI: phụ đề + lời đọc ══════════════════════════════════════ -->
+  <aside class="fl-side">
+    <h2>Bước hiện tại</h2>
+    <div class="fl-cap" id="fl-cap"></div>
+    <div class="fl-say" id="fl-say"></div>
+
+    <div class="fl-steps">
+      <h2>Các bước trong luồng</h2>
+      <div id="fl-list"></div>
+    </div>
+  </aside>
+
+  <!-- phụ đề đè lên khung, chỉ hiện khi ghi hình + bật bằng phím C -->
+  <div class="fl-burn" id="fl-burn"></div>
+
+</div>
+
+<!-- Nạp y hệt mockup.html: cờ này khiến `ui.js` chỉ ĐỊNH NGHĨA các hàm render
+     mà không tự khởi động app, còn `mockup.js` chỉ xuất `window.MU` (nó bỏ qua
+     phần dựng lưới vì trang này không có #gal-grid). -->
+<script>
+  window.MOCKUP_MODE = true;
+  // Flow dùng thêm lớp tranh SVG nội bộ; không phụ thuộc tile/ảnh bản đồ thật.
+  window.FLOW_MODE = true;
+</script>
+<script src="data.js"></script>
+<script src="engine.js"></script>
+<script src="art.js"></script>
+<script src="ui.js"></script>
+<script src="mockup.js"></script>
+<script src="flow.js"></script>
+</body>
+</html>

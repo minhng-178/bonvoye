@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BonVoye — Mockup UI (xem thiết kế)</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="mockup.css">
+</head>
+<body>
+
+<div class="gal">
+  <div class="gal-head">
+    <h1>BonVoye — Mockup UI</h1>
+    <p>
+      Mỗi khung là một <b>trạng thái đứng yên</b>, dựng từ dữ liệu cố định — không đồng hồ
+      tick, không proximity, không cổng xin quyền. Nhờ vậy các trạng thái vốn khó chạm tới
+      (2 NPC trong tầm, story đang phát, nội dung bị khoá, tải dở dang) đều xem được ngay
+      cạnh nhau. Bản đồ dùng ảnh <b>OpenStreetMap thật</b>, pin cắm theo GPS thật.
+    </p>
+    <p style="margin-top:9px">
+      Bản chạy được (có logic đầy đủ) vẫn ở <code>index.html</code>. File này chỉ để xem thiết kế.
+    </p>
+  </div>
+
+  <div class="gal-filters" id="gal-filters"></div>
+  <div class="gal-grid" id="gal-grid"></div>
+</div>
+
+<!-- ui.js dùng lại được nhờ cờ này: nạp hàm render nhưng KHÔNG tự chạy app -->
+<script>window.MOCKUP_MODE = true;</script>
+<script src="data.js"></script>
+<script src="engine.js"></script>
+<script src="art.js"></script>
+<script src="ui.js"></script>
+<script src="mockup.js"></script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-# bonvoye
+<!-- # bonvoye
 
 Flutter app: a location-based narrative/storytelling map. A fullscreen `flutter_map` view
 shows the user's position; NPCs/POIs on the map trigger story content when the user gets
@@ -69,4 +69,4 @@ process instead of jumping straight to code:
    deviations explicitly rather than letting them pass silently.
 
 Skip this process for trivial changes and use judgment — don't manufacture process for its
-own sake.
+own sake. -->
