@@ -78,7 +78,22 @@ function playFirstBlock(storyId, type) {
    Đường đi hạnh phúc, đúng thứ tự app thật bắt người dùng đi.
    ═════════════════════════════════════════════════════════════════════════ */
 
-flow("mo-dau", "Mở đầu → nghe chuyện đầu tiên", "Đường đi chính · 9 bước");
+flow("mo-dau", "Mở đầu → nghe chuyện đầu tiên", "Đường đi chính · 12 bước");
+
+step({
+  cap: "Mở app — Màn hình Splash chào mừng",
+  say: "Mở BonVoye lần đầu. Màn hình Splash chào mừng với logo động dạng la bàn tre đậm chất cổ xưa và slogan giới thiệu.",
+  ms: 3000,
+  build: function () { base(); return screen(renderSplash(), false); },
+});
+
+step({
+  cap: "Đăng nhập — Lưu trữ hành trình",
+  say: "Màn hình đăng nhập bằng số điện thoại hoặc kết nối tài khoản Zalo/Google giúp lưu trữ tiến trình khám phá của người dùng.",
+  ms: 3200,
+  tap: { x: 196, y: 792 },
+  build: function () { base(); return screen(renderLogin(), false); },
+});
 
 step({
   cap: "Mở app — chưa chọn gì",
@@ -210,6 +225,17 @@ step({
     E.completeStory(r.story.id);
     S.overlay = null;
     return screen(renderJourney(), false);
+  },
+});
+
+step({
+  cap: "Xem Hồ sơ cá nhân",
+  say: "Cuối cùng, tab Hồ sơ cá nhân hiển thị thông tin người dùng, các thống kê chi tiết như số di tích đã khám phá, quãng đường đi bộ và các tùy chọn cài đặt hệ thống.",
+  ms: 4200,
+  tap: { x: 343, y: 800 },
+  build: function () {
+    base();
+    return screen(renderProfile(), false);
   },
 });
 

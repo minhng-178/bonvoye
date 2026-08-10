@@ -25,6 +25,21 @@ const T = {
   del: "Xoá",
   notChosen: "chưa chọn",
 
+  // 00 · Splash
+  splashTitle: "BonVoye",
+  splashTagline: "Những câu chuyện ẩn trong từng con phố.",
+  splashLoading: "Đang tải dữ liệu...",
+  splashStart: "Bắt đầu khám phá",
+
+  // 00b · Login
+  loginTitle: "Bắt đầu chuyến đi",
+  loginSubtitle: "Đăng nhập để lưu lại hành trình và các câu chuyện bạn đã nghe.",
+  loginPhoneLabel: "Số điện thoại",
+  loginPhonePlaceholder: "Nhập số điện thoại của bạn",
+  loginContinue: "Tiếp tục",
+  loginOr: "Hoặc đăng nhập bằng",
+  loginSkip: "Trải nghiệm không cần tài khoản",
+
   // 01 · Home
   lang: "Tiếng Việt",
   welcome: "Chào mừng bạn đến với",
@@ -258,6 +273,10 @@ function inverseWorldToGps(wp, site) {
    2. ROUTER
    ======================================================================== */
 const ROUTES = [
+  { hash: "00-splash",    num: "00", group: T.groups.main,
+    label: "Splash — Màn hình chào mừng",                  sub: "Mobile" },
+  { hash: "00b-login",    num: "00b", group: T.groups.main,
+    label: "Đăng nhập — Số điện thoại & Zalo/Google",       sub: "Mobile" },
   { hash: "01-home",      num: "01", group: T.groups.main,
     label: "Home — Chọn thành phố & Topic",                sub: "PHẦN 1–2" },
   { hash: "02-map",       num: "02", group: T.groups.main,
@@ -272,6 +291,8 @@ const ROUTES = [
     label: "Story Sheet — Audio + Webtoon",                sub: "PHẦN 7" },
   { hash: "07-journey",   num: "07", group: T.groups.main,
     label: "Hành trình — POI đã xong, Series, Bí mật",     sub: "PHẦN 8" },
+  { hash: "07b-profile",  num: "07b", group: T.groups.main,
+    label: "Hồ sơ — Tiến trình & Cấu hình",                 sub: "Mobile" },
   { hash: "08-drag",      num: "08", group: T.groups.dev,
     label: "Drag Mode — Kéo vị trí trên bản đồ",           sub: "PHẦN 4" },
   { hash: "10-permission",num: "10", group: T.groups.main,
@@ -293,7 +314,7 @@ function routeFor(hash) {
 }
 
 window.addEventListener("hashchange", function() {
-  var h = location.hash.replace("#", "") || "01-home";
+  var h = location.hash.replace("#", "") || "00-splash";
   S.route = h;
   S.overlay = null;
   S.dragMode = false;
@@ -305,6 +326,39 @@ window.addEventListener("hashchange", function() {
    3. HELPERS — DOM creation
    ======================================================================== */
 function icon(c) { return '<span style="font-size:17px;line-height:1">' + c + '</span>'; }
+
+const SVG_ICONS = {
+  map: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+         '<polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>' +
+         '<line x1="9" y1="3" x2="9" y2="18"/>' +
+         '<line x1="15" y1="6" x2="15" y2="21"/>' +
+       '</svg>',
+  journey: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+             '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>' +
+             '<path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>' +
+           '</svg>',
+  offline: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+             '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
+             '<polyline points="7 10 12 15 17 10"/>' +
+             '<line x1="12" y1="15" x2="12" y2="3"/>' +
+           '</svg>',
+  profile: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+             '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>' +
+             '<circle cx="12" cy="7" r="4"/>' +
+           '</svg>',
+  poiPin: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 20v-5h14v5M3 15h18M6 10h12M9 5v5h6V5z"/></svg>'
+};
+
+function renderTabbar(activeTab, customBadge) {
+  var nNearby = (customBadge !== undefined) ? customBadge : S.inRangeNpcIds.length;
+  var s = '<div class="tabbar">';
+  s += '<button onclick="E.userInteraction();S.route=\'02-map\';E.notify()"' + (activeTab === 'map' ? ' class="on"' : '') + '><b>' + SVG_ICONS.map + '</b>' + T.map + '</button>';
+  s += '<button onclick="E.userInteraction();S.route=\'07-journey\';E.notify()"' + (activeTab === 'journey' ? ' class="on"' : '') + '><b>' + SVG_ICONS.journey + '</b>' + T.journey + '</button>';
+  s += '<button onclick="E.userInteraction();S.route=\'12-download\';E.notify()"' + (activeTab === 'offline' ? ' class="on"' : '') + '><b>' + SVG_ICONS.offline + '</b>' + T.offline + '</button>';
+  s += '<button onclick="E.userInteraction();S.route=\'07b-profile\';E.notify()"' + (activeTab === 'profile' ? ' class="on"' : '') + ' style="position:relative"><b>' + SVG_ICONS.profile + '</b>' + T.profile + (nNearby > 0 ? '<span class="badge">' + nNearby + '</span>' : '') + '</button>';
+  s += '</div>';
+  return s;
+}
 
 function statusBar(dark) {
   var cls = dark ? "statusbar on-dark" : "statusbar";
@@ -448,6 +502,58 @@ function poin(n) { return n.toFixed(1); }
    5. SCREEN RENDERERS
    ======================================================================== */
 
+/* --- 00 · SPLASH -------------------------------------------------------- */
+function renderSplash() {
+  return '<div class="splash-screen">' +
+    '<div class="splash-logo-container">' +
+      '<div class="splash-logo">' +
+        '<svg viewBox="0 0 100 100" width="100" height="100" fill="none" stroke="var(--terracotta)" stroke-width="2.5">' +
+          '<circle cx="50" cy="50" r="42" stroke-dasharray="6 3"/>' +
+          '<circle cx="50" cy="50" r="35"/>' +
+          '<path d="M50 15 L54 44 L83 50 L54 56 L50 85 L46 56 L17 50 L46 44 Z" fill="var(--terracotta)"/>' +
+          '<circle cx="50" cy="50" r="5" fill="var(--paper)"/>' +
+        '</svg>' +
+      '</div>' +
+      '<h1 class="splash-title">' + T.splashTitle + '</h1>' +
+      '<p class="splash-subtitle">' + T.splashTagline + '</p>' +
+    '</div>' +
+    '<div class="splash-footer">' +
+      '<a href="#00b-login" class="btn primary splash-btn">' + T.splashStart + '</a>' +
+      '<div class="splash-loading">' + T.splashLoading + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+/* --- 00b · LOGIN ------------------------------------------------------- */
+function renderLogin() {
+  return '<div class="login-screen scroll">' +
+    '<div class="login-header">' +
+      '<a href="#00-splash" class="login-back-btn">&larr;</a>' +
+      '<h1 class="login-title">' + T.loginTitle + '</h1>' +
+      '<p class="login-subtitle">' + T.loginSubtitle + '</p>' +
+    '</div>' +
+    '<div class="login-form">' +
+      '<div class="form-group">' +
+        '<label class="form-label">' + T.loginPhoneLabel + '</label>' +
+        '<div class="input-phone-wrapper">' +
+          '<span class="country-code">+84</span>' +
+          '<input type="tel" class="form-input" placeholder="' + T.loginPhonePlaceholder + '" value="0912345678">' +
+        '</div>' +
+      '</div>' +
+      '<a href="#01-home" class="btn primary login-btn">' + T.loginContinue + '</a>' +
+      '<div class="login-divider"><span>' + T.loginOr + '</span></div>' +
+      '<div class="social-login-row">' +
+        '<button class="social-btn btn-zalo"><b>Zalo</b></button>' +
+        '<button class="social-btn btn-google"><b>Google</b></button>' +
+        '<button class="social-btn btn-apple"><b>Apple</b></button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="login-footer">' +
+      '<a href="#01-home" class="login-skip-link">' + T.loginSkip + ' &rarr;</a>' +
+    '</div>' +
+  '</div>';
+}
+
 /* --- 01 · HOME --------------------------------------------------------- */
 function renderHome() {
   var city = DB.city(S.cityId);
@@ -581,7 +687,7 @@ function renderMap(forceDrag) {
     else if (d.status === "not_downloaded") stCls = " st-none";
     var lockCls = (blocked && blocked.kind === "entitlement" && !blocked.ent.claimable) ? " locked" : "";
     var rangeCls = inRange ? " inrange" : "";
-    poiMks += '<button class="mk mk-poi' + stCls + lockCls + rangeCls + '" style="left:' + poin(c2.x) + 'px;top:' + poin(c2.y) + 'px" onclick="event.stopPropagation();E.userInteraction();handlePoiClick(' + "'" + poi2.id + "'" + ')"><div class="pin"><em>📌</em></div>';
+    poiMks += '<button class="mk mk-poi' + stCls + lockCls + rangeCls + '" style="left:' + poin(c2.x) + 'px;top:' + poin(c2.y) + 'px" onclick="event.stopPropagation();E.userInteraction();handlePoiClick(' + "'" + poi2.id + "'" + ')"><div class="pin"><em>' + SVG_ICONS.poiPin + '</em></div>';
     if (d.status === "downloading" || d.status === "verifying") {
       var pct = d.totalMB > 0 ? d.mb / d.totalMB : 0;
       var circ = 2 * Math.PI * 18;
@@ -729,13 +835,7 @@ function renderMap(forceDrag) {
   s += '</div>';
 
   // Tab bar
-  var nNearby = S.inRangeNpcIds.length;
-  s += '<div class="tabbar">';
-  s += '<button onclick="E.userInteraction();S.route=' + "'02-map';E.notify()\" class=\"on\"><b>🗺</b>" + T.map + "</button>";
-  s += '<button onclick="E.userInteraction();S.route=' + "'07-journey';E.notify()\"><b>📖</b>" + T.journey + "</button>";
-  s += '<button onclick="E.userInteraction();S.route=' + "'12-download';E.notify()\"><b>⬇</b>" + T.offline + "</button>";
-  s += '<button onclick="E.userInteraction();" style="position:relative"><b>👤</b>' + T.profile + (nNearby > 0 ? '<span class="badge">' + nNearby + '</span>' : '') + '</button>';
-  s += '</div>';
+  s += renderTabbar('map');
 
   s += '</div></div>';
 
@@ -988,10 +1088,65 @@ function renderStory() {
   return s;
 }
 
+/* --- 07b · PROFILE ---------------------------------------------------- */
+function renderProfile() {
+  var s = '<div class="body scroll">';
+  s += '<div style="padding:16px 20px 80px">';
+  
+  // Profile Header with Avatar
+  s += '<div class="profile-header-card">' +
+         '<div class="avatar-container">' +
+           '<div class="avatar-fallback">U</div>' +
+         '</div>' +
+         '<div class="profile-meta">' +
+           '<h3>Nguyễn Văn A</h3>' +
+           '<p>+84 91 234 5678</p>' +
+         '</div>' +
+       '</div>';
+
+  // Statistics / Progress Grid
+  var completedPois = DB.POIS.filter(function(p) { return prog("poi", p.id).state === "completed"; });
+  var totalPois = DB.POIS.length;
+  s += '<div class="profile-stats-grid">' +
+         '<div class="stat-card"><b>' + completedPois.length + '/' + totalPois + '</b><span>Di tích</span></div>' +
+         '<div class="stat-card"><b>120m</b><span>Đã đi bộ</span></div>' +
+         '<div class="stat-card"><b>36m</b><span>Nghe kể</span></div>' +
+       '</div>';
+
+  // Settings List
+  s += '<div class="settings-group">' +
+         '<span class="eyebrow">Tài khoản & Thiết lập</span>' +
+         '<button class="rowbtn" onclick="E.userInteraction();cyclePermission(\'location\');E.notify()">' +
+           '<div class="grow"><b>Quyền vị trí</b><span>' + T.permShort[S.permissions.location] + '</span></div>' +
+         '</button>' +
+         '<button class="rowbtn" onclick="E.userInteraction();cyclePermission(\'notification\');E.notify()">' +
+           '<div class="grow"><b>Quyền thông báo</b><span>' + T.permShort[S.permissions.notification] + '</span></div>' +
+         '</button>' +
+         '<button class="rowbtn" onclick="E.userInteraction();S.online=!S.online;E.notify()">' +
+           '<div class="grow"><b>Chế độ hoạt động</b><span>' + (S.online ? 'Trực tuyến (Online)' : 'Ngoại tuyến (Offline)') + '</span></div>' +
+         '</button>' +
+       '</div>';
+
+  // Partner & Actions
+  s += '<div class="settings-group" style="margin-top:20px">' +
+         '<span class="eyebrow">Tùy chọn khác</span>' +
+         '<a href="#15-partner-code-success" class="rowbtn" style="text-decoration:none;color:inherit">' +
+           '<div class="grow"><b>Nhập mã đối tác B2B2C</b><span>Mở khóa các địa điểm đặc biệt</span></div>' +
+         '</a>' +
+         '<a href="#00-splash" class="rowbtn" style="text-decoration:none;color:var(--danger)">' +
+           '<div class="grow"><b style="color:var(--danger)">Đăng xuất</b><span>Quay lại màn hình chào mừng</span></div>' +
+         '</a>' +
+       '</div>';
+
+  s += '</div></div>';
+  s += renderTabbar('profile');
+  return s;
+}
+
 /* --- 07 · JOURNEY ----------------------------------------------------- */
 function renderJourney() {
   var s = '<div class="body scroll">';
-  s += '<div style="padding:16px 20px">';
+  s += '<div style="padding:16px 20px 80px">';
   s += '<p class="h2">' + T.journey + '</p>';
 
   // Completed POIs
@@ -1043,6 +1198,7 @@ function renderJourney() {
   s += '</div>';
 
   s += '</div></div>';
+  s += renderTabbar('journey');
   return s;
 }
 
@@ -1064,8 +1220,7 @@ function renderGenericPermission() {
     var key = entries[ei][0];
     var req = entries[ei][1];
     var pState = S.permissions[key] || "not_asked";
-    var ico = req.icon === "pin" ? "📍" : req.icon === "bell" ? "🔔" : req.icon === "refresh" ? "🔄" : "🛡";
-    s += '<button class="strong" onclick="event.stopPropagation();cyclePermission(' + "'" + key + "'" + ')">' + ico + " " + req.permission_name + '<small style="display:block;font-size:10px;opacity:0.6">' + (T.permShort[pState] || pState) + '</small></button>';
+    s += '<button class="strong" onclick="event.stopPropagation();cyclePermission(' + "'" + key + "'" + ')">' + req.permission_name + '<small style="display:block;font-size:10px;opacity:0.6">' + (T.permShort[pState] || pState) + '</small></button>';
   }
   s += '<button onclick="E.userInteraction();S.route=' + "'02-map';E.notify()\">" + T.done + "</button>";
   s += '</div></div></div>';
@@ -1235,12 +1390,12 @@ function renderPartnerCodeSuccess() {
   var poiName = ov.poiName || "Ô Quan Chưởng";
 
   var s = '<div class="scrim" style="z-index:78" onclick="event.stopPropagation()"></div>';
-  s += '<div class="popup" style="background: linear-gradient(135deg, #2b1f4d 0%, #17102b 100%); border: 1px solid #7c5cff;">';
+  s += '<div class="popup">';
   s += '<div class="lockfx" style="font-size:36px; margin-bottom:12px;">🎉 🔓</div>';
-  s += '<p class="h2" style="color:#d5caff">' + T.partnerCodeSuccessTitle + '</p>';
+  s += '<p class="h2">' + T.partnerCodeSuccessTitle + '</p>';
   s += '<p class="p" style="margin-top:8px; font-size:13px;">' + T.partnerCodeSuccessBody(partnerName, poiName) + '</p>';
-  s += '<p class="tiny" style="margin-top:8px; color:rgba(255,255,255,0.5)">Mã đã dùng: <code style="background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; font-family:monospace;">' + code + '</code></p>';
-  s += '<button class="btn primary" style="margin-top:16px; width:100%; background:#7c5cff; border-color:#7c5cff;" onclick="event.stopPropagation(); E.userInteraction(); resetOverlay(); S.route=\'02-map\'; E.notify()">' + T.exploreNow + '</button>';
+  s += '<p class="tiny" style="margin-top:8px; color:rgba(255,255,255,0.4)">Mã đã dùng: <code style="background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; font-family:monospace;">' + code + '</code></p>';
+  s += '<button class="btn primary" style="margin-top:16px; width:100%;" onclick="event.stopPropagation(); E.userInteraction(); resetOverlay(); S.route=\'02-map\'; E.notify()">' + T.exploreNow + '</button>';
   s += '</div>';
   return s;
 }
@@ -1479,12 +1634,14 @@ function render() {
   var sc = document.getElementById("screen");
   var routeEntry = routeFor(S.route);
   var num = routeEntry.num;
-  var hasOverlayMap = ["04","05","06","08","13","14","15"].indexOf(num) >= 0;
+  var hasOverlayMap = ["04","05","06","08","12","13","14","15"].indexOf(num) >= 0;
 
   var bodyHtml = "";
   if (hasOverlayMap) bodyHtml = renderMap();
 
   switch (num) {
+    case "00": bodyHtml = renderSplash(); break;
+    case "00b": bodyHtml = renderLogin(); break;
     case "01": bodyHtml = renderHome(); break;
     case "02": bodyHtml = renderMap(); break;
     case "03": bodyHtml = renderPermission(); break;
@@ -1492,17 +1649,18 @@ function render() {
     case "05": bodyHtml = renderMap() + renderChooser(); break;
     case "06": bodyHtml = renderMap() + renderStory(); break;
     case "07": bodyHtml = renderJourney(); break;
+    case "07b": bodyHtml = renderProfile(); break;
     case "08": bodyHtml = renderMap(true) + (S.gps.mode === "faked" ? '' : ''); break;
     case "10": bodyHtml = renderGenericPermission(); break;
     case "11": bodyHtml = renderGeofence(); break;
-    case "12": bodyHtml = renderDownload(); break;
+    case "12": bodyHtml = renderMap() + renderDownload(); break;
     case "13": bodyHtml = renderMap() + renderUnlock(); break;
     case "14": bodyHtml = renderMap() + renderLocked(); break;
     case "15": bodyHtml = renderMap() + renderPartnerCodeSuccess(); break;
     default: bodyHtml = renderHome();
   }
 
-  var isDark = ["02","04","05","06","08","11","13","14","15"].indexOf(num) >= 0;
+  var isDark = ["02","04","05","06","08","11","12","13","14","15"].indexOf(num) >= 0;
   sc.innerHTML = screen(bodyHtml, isDark);
 
   setupMapInteractions();
@@ -1518,7 +1676,7 @@ function render() {
  * là hàm của dữ liệu đứng yên — không có cổng chặn nào, không có gì để vỡ. */
 if (!window.MOCKUP_MODE) {
   E.subscribe(render);
-  var initHash = location.hash.replace("#", "") || "01-home";
+  var initHash = location.hash.replace("#", "") || "00-splash";
   S.route = initHash;
   S._panX = 0;
   S._panY = 0;

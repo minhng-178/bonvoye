@@ -164,7 +164,7 @@ function mapSurface(cfg) {
     if (inRange.indexOf(poi.id) >= 0) cls += " inrange";
     if (cfg.dimUndownloaded && d.status !== "ready") cls += " focusdim";
     s += '<div class="' + cls + '" style="left:' + c.x.toFixed(1) + "px;top:" + c.y.toFixed(1) +
-      'px"><div class="pin"><em>📌</em></div></div>';
+      'px"><div class="pin"><em>' + SVG_ICONS.poiPin + '</em></div></div>';
   });
 
   // NPC — chỉ những POI đang trong tầm, đúng như app (PHẦN 6)
@@ -259,13 +259,7 @@ function mapScreen(cfg) {
   s += "</div>"; // /hud
 
   var badge = cfg.nearby ? DB.npcsOfPoi(cfg.nearby).length : 0;
-  s += '<div class="tabbar">';
-  s += '<button class="on"><b>🗺</b>' + T.map + "</button>";
-  s += "<button><b>📖</b>" + T.journey + "</button>";
-  s += "<button><b>⬇</b>" + T.offline + "</button>";
-  s += '<button style="position:relative"><b>👤</b>' + T.profile +
-    (badge > 0 ? '<span class="badge">' + badge + "</span>" : "") + "</button>";
-  s += "</div>";
+  s += renderTabbar('map', badge);
 
   return s + "</div>";
 }
@@ -293,6 +287,24 @@ var CUAO = "s-cuao";
 var VANMIEU = "s-vanmieu";
 
 /* --- Khởi động ----------------------------------------------------------- */
+scene({
+  num: "00", group: "Khởi động", title: "Splash Screen — Màn hình chào mừng",
+  note: "Màn hình splash ban đầu. Hiển thị logo động dạng la bàn tre và slogan.",
+  build: function () {
+    reset();
+    return screen(renderSplash(), false);
+  },
+});
+
+scene({
+  num: "00b", group: "Khởi động", title: "Login Screen — Đăng nhập số điện thoại",
+  note: "Form đăng nhập bằng số điện thoại + các tùy chọn đăng nhập bằng MXH (Zalo, Google, Apple) hoặc Trải nghiệm nhanh.",
+  build: function () {
+    reset();
+    return screen(renderLogin(), false);
+  },
+});
+
 scene({
   num: "01", group: "Khởi động", title: "Home — chưa chọn gì",
   note: "Nút bắt đầu bị vô hiệu tới khi chọn đủ thành phố + chủ đề.",
@@ -642,6 +654,15 @@ scene({
 });
 
 scene({
+  num: "07b", group: "Tiến trình", title: "Hồ sơ — Tiến trình & Cấu hình",
+  note: "Màn hình cá nhân hiển thị tiến độ di tích, quãng đường đi bộ và các tùy chọn cài đặt quyền lợi, đăng xuất.",
+  build: function () {
+    reset(); S.topicId = "t-phoco";
+    return screen(renderProfile(), false);
+  },
+});
+
+scene({
   num: "12", group: "Tiến trình", title: "Tải gói Offline — nhiều trạng thái",
   note: "Xong / đang tải / tạm dừng (resume tiếp từ số MB đã tải) / chưa tải.",
   build: function () {
@@ -650,7 +671,9 @@ scene({
     if (all[0]) S.downloads[all[0].id] = { status: "ready", pkg: "full", mb: all[0].pkg.fullMB, totalMB: all[0].pkg.fullMB };
     if (all[1]) S.downloads[all[1].id] = { status: "downloading", pkg: "full", mb: Math.round(all[1].pkg.fullMB * 0.42), totalMB: all[1].pkg.fullMB };
     if (all[2]) S.downloads[all[2].id] = { status: "paused", pkg: "audio", mb: Math.round(all[2].pkg.audioMB * 0.66), totalMB: all[2].pkg.audioMB };
-    return screen(renderDownload(), false);
+    var st = site(CUAO), poi = poisOf(CUAO)[0];
+    var bg = mapScreen({ site: st, center: poi.location, zoom: 18, me: poi.location, distLabel: T.insideSite(st.name) });
+    return screen(bg + renderDownload(), true);
   },
 });
 

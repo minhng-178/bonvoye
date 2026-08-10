@@ -383,6 +383,233 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .radio.on::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--terracotta); }
 
 /* =============================================================================
+   MÀN 00 — SPLASH SCREEN
+   ========================================================================== */
+.splash-screen {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 40px 24px 30px;
+  background: var(--paper);
+  text-align: center;
+}
+.splash-logo-container {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-top: 40px;
+}
+.splash-logo {
+  margin-bottom: 24px;
+  animation: splashPulse 2s infinite ease-in-out;
+}
+@keyframes splashPulse {
+  0% { transform: scale(1); opacity: 0.95; }
+  50% { transform: scale(1.05); opacity: 1; filter: drop-shadow(0 0 15px rgba(180, 71, 43, 0.15)); }
+  100% { transform: scale(1); opacity: 0.95; }
+}
+.splash-title {
+  font-family: var(--serif);
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--terracotta);
+  margin: 0 0 12px 0;
+}
+.splash-subtitle {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-70);
+  max-width: 250px;
+  margin: 0;
+}
+.splash-footer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.splash-btn {
+  height: 52px;
+  border-radius: 12px;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+  box-shadow: 0 4px 12px rgba(180, 71, 43, 0.2);
+}
+.splash-loading {
+  font-size: 12px;
+  color: var(--ink-45);
+}
+
+/* =============================================================================
+   MÀN 00b — LOGIN SCREEN
+   ========================================================================== */
+.login-screen {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 24px 30px;
+  background: var(--paper);
+}
+.login-header {
+  position: relative;
+  margin-bottom: 28px;
+}
+.login-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 18px;
+  text-decoration: none;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+.login-back-btn:active {
+  background: var(--paper-2);
+}
+.login-title {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 10px 0;
+  letter-spacing: -0.01em;
+}
+.login-subtitle {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-70);
+  margin: 0;
+}
+.login-form {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.form-label {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink-70);
+}
+.input-phone-wrapper {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+  height: 50px;
+  padding: 0 14px;
+  transition: border-color 0.2s ease;
+}
+.input-phone-wrapper:focus-within {
+  border-color: var(--terracotta);
+  box-shadow: 0 0 0 2.5px rgba(180, 71, 43, 0.1);
+}
+.country-code {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-70);
+  border-right: 1.5px solid var(--line);
+  padding-right: 10px;
+  margin-right: 12px;
+}
+.form-input {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 14.5px;
+  color: var(--ink);
+  font-weight: 600;
+  width: 100%;
+}
+.login-btn {
+  height: 50px;
+  border-radius: 12px;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+}
+.login-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--ink-45);
+  font-size: 11.5px;
+  margin: 8px 0;
+}
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--line);
+}
+.login-divider:not(:empty)::before {
+  margin-right: 10px;
+}
+.login-divider:not(:empty)::after {
+  margin-left: 10px;
+}
+.social-login-row {
+  display: flex;
+  gap: 12px;
+}
+.social-btn {
+  flex: 1;
+  height: 48px;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+.social-btn:active {
+  background: var(--paper-2);
+}
+.btn-zalo {
+  border-color: #0068ff;
+  color: #0068ff;
+  background: #f0f6ff;
+}
+.btn-zalo:active {
+  background: #dbebff;
+}
+.login-footer {
+  text-align: center;
+  margin-top: 24px;
+}
+.login-skip-link {
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--terracotta);
+  text-decoration: none;
+}
+.login-skip-link:hover {
+  text-decoration: underline;
+}
+
+/* =============================================================================
    MÀN 01 — HOME
    ========================================================================== */
 .home {
@@ -659,7 +886,17 @@ button { font: inherit; color: inherit; cursor: pointer; }
   font-size: 10px; font-weight: 600; color: var(--ink-45);
   padding: 4px 0;
 }
-.tabbar button b { font-size: 17px; font-weight: 400; line-height: 1; }
+.tabbar button b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  line-height: 1;
+}
+.tabbar button svg {
+  display: block;
+}
 .tabbar button.on { color: var(--terracotta); }
 .tabbar .badge {
   position: absolute; transform: translate(14px, -4px);
@@ -755,9 +992,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   position: absolute; z-index: 80;
   top: 50%; left: 50%; transform: translate(-50%, -50%);
   width: 300px; padding: 26px 22px 20px;
-  background: linear-gradient(170deg, #2c2340, #3d3156);
-  color: #f0e9ff;
-  border: 1px solid #56487a;
+  background: linear-gradient(170deg, #3a2712, #201507);
+  color: #fff2e0;
+  border: 1px solid var(--ochre);
   border-radius: var(--r-l);
   text-align: center;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
@@ -774,7 +1011,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   100% { transform: scale(1) rotate(0); opacity: 1; }
 }
 .popup .h2 { color: #fff; }
-.popup .p { color: #c6badf; }
+.popup .p { color: #dfcca7; }
 
 /* banner nhẹ — màn 09 (KHÔNG chặn thao tác, PHẦN 12 câu 1 · giả định) */
 .banner {
@@ -1010,6 +1247,83 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .pkgopt .grow b { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; }
 .pkgopt .grow span { display: block; font-size: 11.5px; color: var(--ink-45); margin-top: 2px; }
 .gauge { display: flex; align-items: baseline; justify-content: space-between; font-size: 11px; color: var(--ink-45); margin-bottom: 5px; }
+
+/* =============================================================================
+   MÀN 07b — PROFILE SCREEN
+   ========================================================================== */
+.profile-header-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-m);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.avatar-container {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--cream);
+  border: 1.5px solid var(--terracotta);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.avatar-fallback {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--terracotta);
+  line-height: 1;
+}
+.profile-meta h3 {
+  margin: 0 0 4px 0;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.profile-meta p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-70);
+  font-family: var(--mono);
+}
+.profile-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: #fff;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stat-card b {
+  font-size: 15px;
+  color: var(--terracotta);
+}
+.stat-card span {
+  font-size: 11px;
+  color: var(--ink-45);
+  font-weight: 600;
+}
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.settings-group .eyebrow {
+  margin-bottom: 4px;
+}
 
 /* =============================================================================
    INSPECTOR (ngoài khung máy — thứ openDesign không làm được)
