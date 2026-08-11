@@ -704,6 +704,40 @@ scene({
   },
 });
 
+scene({
+  num: "16", group: "Tương tác", dark: true, title: "Chọn tầng — Floor Picker Bottom Sheet",
+  note: "Hiện pop-up chọn tầng khi user đứng tại địa điểm có nhiều tầng (Hầm vs Lầu).",
+  build: function () {
+    reset(); S.topicId = "t-phoco";
+    var st = site(CUAO);
+    var poi = poisOf(CUAO)[0]; // Ô Quan Chưởng
+    S.activeSiteId = CUAO; S.insideSite = true; S.siteDistanceM = 0;
+    S.route = "16-floor-picker";
+    return screen(mapScreen({
+      site: st, center: poi.location, zoom: 18, me: poi.location, accuracy: 9,
+      inRangePois: [poi.id], showZones: true, labels: true,
+      distLabel: T.insideSite(st.name), nearby: poi.id
+    }) + renderFloorPicker(), true);
+  },
+});
+
+scene({
+  num: "17", group: "Tương tác", dark: true, title: "Chuỗi nhiệm vụ NPC — Multi-POI Questline",
+  note: "Màn hình theo dõi hành trình của 1 NPC xuất hiện tại nhiều địa điểm (POIs).",
+  build: function () {
+    reset(); S.topicId = "t-phoco";
+    var st = site(CUAO);
+    var poi = poisOf(CUAO)[0]; // Ô Quan Chưởng
+    S.activeSiteId = CUAO; S.insideSite = true; S.siteDistanceM = 0;
+    S.route = "17-npc-series";
+    return screen(mapScreen({
+      site: st, center: poi.location, zoom: 18, me: poi.location, accuracy: 9,
+      inRangePois: [poi.id], showZones: true, labels: true,
+      distLabel: T.insideSite(st.name), nearby: poi.id
+    }) + renderNpcSeries(), true);
+  },
+});
+
 /* ── 6 · Dựng trang ───────────────────────────────────────────────────────── */
 
 /** `mockup.html#solo=3` → xem riêng một cảnh ở đúng cỡ 393×852 (không thu nhỏ),
@@ -776,6 +810,11 @@ window.MU = {
   poisOf: poisOf,
   W: W, H: H, MH: MH, CLOCK_MS: CLOCK_MS,
 };
+
+/* Optional extension point: new static scenes live outside this legacy harness. */
+if (typeof window.BV_REGISTER_MOCKUP_SCENES === "function") {
+  window.BV_REGISTER_MOCKUP_SCENES(scene);
+}
 
 /* Chỉ dựng lưới khi thật sự đang ở `mockup.html`. `flow.html` nạp cùng file này
  * chỉ để lấy `window.MU`, không có `#gal-grid` — không chặn thì buildAll() ném

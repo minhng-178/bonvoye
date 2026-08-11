@@ -7,11 +7,11 @@
      · `index.html` chạy thật ⇒ muốn tới màn "2 NPC trong tầm" phải lần lượt qua
        quyền → geofence → proximity → entitlement → offline. Đúng để review logic,
        nhưng không quay được: lên hình toàn cảnh vật lộn với máy trạng thái.
-     · `mockup.html` bày 24 trạng thái cạnh nhau. Đúng để ngắm thiết kế, nhưng nó
+     · `mockup.html` bày 50 trạng thái cạnh nhau. Đúng để ngắm thiết kế, nhưng nó
        là tờ contact sheet — không có thứ tự, không kể được app CHUYỂN như thế nào.
 
    File này lấy đúng các hàm render của `ui.js` và bề mặt bản đồ của `mockup.js`
-   (qua `window.MU`), rồi xâu thành 6 luồng có thứ tự. Không màn nào được vẽ lại
+   (qua `window.MU`), rồi xâu thành 10 luồng có thứ tự. Không màn nào được vẽ lại
    ở đây — mỗi bước chỉ là "gán trạng thái rồi gọi render*() có sẵn".
    ========================================================================== */
 
@@ -851,6 +851,116 @@ step({
     });
     return screen(bg, false);
   },
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LUỒNG 8 — Khám phá nội dung
+   Home → Search → Results → POI detail → unlock/download.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+flow("discovery", "Khám phá nội dung", "Tìm kiếm · POI detail · 5 bước");
+
+step({
+  cap: "Tìm kiếm — Gợi ý cho bạn",
+  say: "Thay vì chỉ chờ GPS, người dùng có thể chủ động duyệt nội dung theo thành phố, chủ đề hoặc tên di tích.",
+  ms: 4200,
+  build: function () { base(); S.selectedPoiId = "p-oquanchuong"; return renderSearch(); },
+});
+step({
+  cap: "Kết quả tìm kiếm",
+  say: "Kết quả dùng chung cây nội dung của app: điểm dừng, người kể và câu chuyện đều dẫn về cùng một POI detail.",
+  ms: 4200,
+  build: function () { base(); S.selectedPoiId = "p-oquanchuong"; return renderSearchResults(); },
+});
+step({
+  cap: "POI detail — có thể khám phá",
+  say: "POI detail gom tóm tắt, thời lượng, người kể và trạng thái tải vào một chỗ trước khi người dùng ra đường.",
+  ms: 4600,
+  build: function () { base(); return renderPoiDetail(); },
+});
+step({
+  cap: "POI detail — nội dung bị khoá",
+  say: "Nếu nội dung yêu cầu entitlement, người dùng vẫn xem được giá trị của điểm đến trước khi quyết định mở khoá.",
+  ms: 4400,
+  build: function () { base(); return renderPoiDetailLocked(); },
+});
+step({
+  cap: "Mở gói hoặc tải offline",
+  say: "Từ POI detail, người dùng đi thẳng sang mở khoá hoặc tải gói offline; hai hành động này không bị trộn vào màn bản đồ.",
+  ms: 4200,
+  build: function () { base(); return renderOffers(); },
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LUỒNG 9 — Mua và khôi phục
+   ═════════════════════════════════════════════════════════════════════════ */
+
+flow("commerce", "Mua và khôi phục nội dung", "Offers · IAP mock · restore · 5 bước");
+step({
+  cap: "Chọn gói nội dung",
+  say: "Các gói POI, tuyến, thành phố và hội viên được trình bày cùng một component option nhưng lấy dữ liệu từ config.",
+  ms: 4200,
+  build: function () { base(); return renderOffers(); },
+});
+step({
+  cap: "Đang xác nhận giao dịch",
+  say: "Prototype chỉ mô phỏng trạng thái chờ receipt validation; không giả vờ dựng lại màn system của Apple hoặc Google.",
+  ms: 4200,
+  build: function () { base(); return renderPurchaseProcessing(); },
+});
+step({
+  cap: "Mua thành công",
+  say: "Sau khi backend xác nhận, entitlement được cấp và người dùng có đường đi rõ ràng tới tải offline hoặc khám phá.",
+  ms: 4200,
+  build: function () { base(); return renderPurchaseSuccess(); },
+});
+step({
+  cap: "Khôi phục giao dịch",
+  say: "Khi đổi máy hoặc cài lại app, restore là một luồng riêng, không phải mua lại.",
+  ms: 4200,
+  build: function () { base(); return renderRestore(); },
+});
+step({
+  cap: "Khôi phục thành công",
+  say: "Quyền cũ quay lại mà không làm thay đổi progress đã lưu.",
+  ms: 4200,
+  build: function () { base(); return renderRestoreSuccess(); },
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LUỒNG 10 — Trip Planner
+   ═════════════════════════════════════════════════════════════════════════ */
+
+flow("planner", "Lên lịch một chuyến đi", "Chọn điểm · thời lượng · chỉnh tuyến · 5 bước");
+step({
+  cap: "Chọn các điểm muốn ghé",
+  say: "Trip Planner khác với Hành trình: đây là lúc lập kế hoạch, chưa phải danh sách nội dung đã hoàn thành.",
+  ms: 4200,
+  build: function () { base(); return renderTripSelect(); },
+});
+step({
+  cap: "Chọn thời lượng và cách đi",
+  say: "Người dùng chọn một khoảng thời gian đơn giản và cách đi, không cần cấu hình route optimization phức tạp.",
+  ms: 4200,
+  build: function () { base(); return renderTripDuration(); },
+});
+step({
+  cap: "Tuyến gợi ý",
+  say: "BonVoye xếp thứ tự các POI, hiển thị tổng thời lượng và bản đồ tuyến để người dùng kiểm tra nhanh.",
+  ms: 4200,
+  build: function () { base(); return renderTripGenerated(); },
+});
+step({
+  cap: "Chỉnh tuyến thủ công",
+  say: "Người dùng có thể đổi thứ tự hoặc bỏ một điểm mà không cần tạo lại toàn bộ hành trình.",
+  ms: 4200,
+  build: function () { base(); return renderTripEdit(); },
+});
+step({
+  cap: "Đã lưu hành trình",
+  say: "Sau khi lưu, hành trình có thể mở trên bản đồ hoặc xem lại trong tab Hành trình.",
+  ms: 4200,
+  build: function () { base(); return renderTripSaved(); },
 });
 
 /* ── 2 · Trình chiếu ──────────────────────────────────────────────────────── */

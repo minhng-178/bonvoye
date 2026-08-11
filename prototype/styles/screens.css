@@ -1,0 +1,13 @@
+/* Screen-level layout for the reusable discovery, commerce, and planner surfaces. */
+.bv-screen { flex: 1 1 auto; min-height: 0; background: var(--paper); color: var(--ink); }
+.bv-screen.scroll { overflow-y: auto; overflow-x: hidden; }
+.bv-screen-pad { padding: 16px 20px 88px; }
+.bv-screen-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; }
+.bv-screen-head .grow { flex: 1 1 auto; min-width: 0; }
+.bv-screen-head .h1, .bv-screen-head .h2 { margin: 0; }
+.bv-screen-subtitle { margin-top: 5px; }
+.bv-sticky-cta { position: absolute; right: 0; bottom: 0; left: 0; z-index: var(--z-nav); padding: 10px 20px 27px; border-top: 1px solid var(--line); background: rgba(250,245,234,.96); backdrop-filter: blur(12px); }
+.bv-inline-actions { display: flex; gap: 8px; align-items: center; }
+.bv-inline-actions > * { flex: 1 1 0; }
+.bv-muted { color: var(--ink-45); }
+.bv-dark-note { padding: 10px 12px; border-radius: var(--r-m); background: var(--night); color: #dfeaf0; font-size: 11px; line-height: 1.45; }

@@ -3,9 +3,9 @@
 Mở bằng browser, không build step.
 
 ```
-open index.html     # bản CHẠY ĐƯỢC — 14 màn + 3 máy trạng thái chạy thật
-open mockup.html    # bản XEM THIẾT KẾ — 24 trạng thái tĩnh, cạnh nhau
-open flow.html      # bản ĐỂ QUAY VIDEO — 6 luồng, 36 bước, một khung máy
+open index.html     # bản CHẠY ĐƯỢC — app shell + máy trạng thái chạy thật
+open mockup.html    # bản XEM THIẾT KẾ — 50 trạng thái tĩnh, cạnh nhau
+open flow.html      # bản ĐỂ QUAY VIDEO — 10 luồng, một khung máy
 # hoặc
 python3 -m http.server 8765  →  http://localhost:8765
 # muốn xem trên iPhone thật: mở Safari, vào IP-máy:8765
@@ -17,7 +17,7 @@ python3 -m http.server 8765  →  http://localhost:8765
 |---|---|---|---|
 | Dùng để | review **hành vi** (logic, máy trạng thái) | review **thiết kế** (nhìn UI) | **quay video** đi demo |
 | Trạng thái | engine chạy thật, có tick | dữ liệu đứng yên, không tick | đứng yên, nhưng **có thứ tự** |
-| Bố cục | 1 khung + rail + Inspector | 24 khung cạnh nhau | 1 khung, đi từng bước |
+| Bố cục | 1 khung + rail + Inspector | 50 khung cạnh nhau | 1 khung, đi từng bước |
 | Xem một màn | phải đi qua đủ điều kiện | hiện ngay | nằm đúng chỗ của nó trong luồng |
 | Bản đồ | lớp tranh isometric | ảnh tile **OpenStreetMap thật** | dùng lại của `mockup.js` |
 
@@ -30,10 +30,10 @@ muốn thấy thẻ "2 NPC trong tầm" phải lần lượt qua quyền vị tr
 → entitlement → offline. Đúng cho việc review logic, nhưng ngược đời khi chỉ muốn ngắm
 thiết kế. `mockup.html` gán thẳng trạng thái nên bỏ hết các cổng đó.
 
-Vì sao cần thêm bản flow: `mockup.html` là tờ contact sheet — 24 trạng thái nằm cạnh
+Vì sao cần thêm bản flow: `mockup.html` là tờ contact sheet — 50 trạng thái nằm cạnh
 nhau, không có thứ tự, nên không kể được app **chuyển** như thế nào. Còn quay
 `index.html` thì lên hình toàn cảnh vật lộn với máy trạng thái. `flow.html` xâu các
-trạng thái ấy thành 6 luồng có thứ tự trên một khung máy duy nhất, chạy tự động được.
+trạng thái ấy thành 10 luồng có thứ tự trên một khung máy duy nhất, chạy tự động được.
 
 ---
 
@@ -53,6 +53,10 @@ open 'flow.html#rec'              # mở sẵn ở chế độ ghi hình
 | Ngoại tuyến — tải gói trước | `ngoai-tuyen` | 7 |
 | Khoá & mở khoá | `khoa` | 5 |
 | Quyền & chạy nền | `quyen-nen` | 4 |
+| Mã đối tác B2B2C | `partner-code` | 5 |
+| Khám phá nội dung | `discovery` | 5 |
+| Mua và khôi phục nội dung | `commerce` | 5 |
+| Lên lịch một chuyến đi | `planner` | 5 |
 
 Phím: `←` `→` lùi/tiến · `Space` phát luồng này · `Shift+Space` phát liên tục hết 6
 luồng · `R` chế độ ghi hình · `C` phụ đề đè lên khung · `1`–`6` nhảy luồng ·
@@ -86,6 +90,11 @@ Web Mercator và bán kính tính bằng mét thật chỉ có **một** bản t
 | 12 | Tải gói Offline (resume + verify) | PHẦN 9b | `#12-download` |
 | 13 | Popup mở khoá Hidden Thread | PHẦN 8 | `#13-unlock` |
 | 14 | Nội dung bị khoá (entitlement) | TD §10 (suy ra) | `#14-locked` |
+| 18 | Search / browse / empty | WBS 4.1.2–4.1.3 | `#18-search` |
+| 19 | POI detail (available / locked / offline) | WBS 4.2.1 | `#19-poi-detail` |
+| 20 | Offers / purchase states | WBS 5.2–5.3 | `#20-offers` |
+| 21 | Restore purchases | WBS 5.4 | `#21-restore-purchases` |
+| 22–23 | Trip Planner | WBS 5.1 | `#22-trip-select` |
 
 ---
 
@@ -124,20 +133,38 @@ Web Mercator và bán kính tính bằng mét thật chỉ có **một** bản t
 ## Cấu trúc file
 
 ```
-index.html   — Shell bản chạy được: khung 393×852, rail, inspector
-app.css      — Toàn bộ style (palette artwork, primitive, màn hình)
-data.js      — CONSTANTS + mock cây 8 cấp (VN→HN→2 topic→3 site→7 POI→10 NPC→story)
+index.html / mockup.html / flow.html — ba entry point, cùng load thứ tự classic-script
+
+src/config/app-config.js — brand, feature flags, purchase plans, planner config
+src/config/copy.vi.js   — cầu nối copy locale trong giai đoạn di chuyển
+src/ui/html.js          — escape, attribute và fragment helpers
+src/ui/icons.js         — icon registry dùng lại được
+src/ui/components.js    — button, card, row, chip, sheet, progress, field...
+src/ui/layout.js        — adapter cho screen/tabbar legacy
+src/screens/            — discovery, commerce, Trip Planner renderers
+src/scenes/next-scenes.js — static gallery scenes cho route 18–23
+styles/tokens.css       — palette, semantic colors, type, spacing, radii, z-index
+styles/base.css         — shared accessibility/base layer
+styles/components.css   — reusable component styles
+styles/screens.css      — new screen layout styles
+styles/workbench.css    — workbench additions
+
+app.css      — legacy-compatible shell/map/inspector/screen styles
+mockup.js    — existing scene harness + OSM/Web Mercator; exports `window.MU`
+flow.js      — 10 recording flows / 50+ steps
+
+data.js     — CONSTANTS + mock cây 8 cấp
 engine.js    — 3 máy trạng thái + haversine + progress + audio
 art.js       — SVG: lớp tranh isometric, map thật, NPC figure, webtoon
-ui.js        — Bảng chuỗi T + router + render 14 màn + Inspector 6 tab
-
-mockup.html  — Shell bản xem thiết kế
-mockup.css   — Chỉ bố cục lưới khung + lớp tile bản đồ (không sửa style của app)
-mockup.js    — 24 cảnh tĩnh + Web Mercator + bề mặt bản đồ OSM; xuất `window.MU`
-
-flow.html    — Shell bản để quay video
-flow.css     — Vỏ trình chiếu + chế độ ghi hình (không chạm gì bên trong `.screen`)
-flow.js      — 6 luồng / 36 bước + trình chiếu (tự phát, deep link, nạp trước tile)
+ui.js        — legacy router/renderers + compatibility adapters for new screens
 ```
+
+### Thêm một màn mới
+
+1. Đặt copy và dữ liệu demo dùng chung trong `src/config/app-config.js`.
+2. Dùng `BV_UI.components` thay vì tạo lại card/button/sheet bằng inline HTML.
+3. Tạo renderer dưới `src/screens/`, trả về `BV_UI.layout.frame(...)`.
+4. Thêm route adapter trong `ui.js` và static scene trong `src/scenes/next-scenes.js`.
+5. Chỉ thêm CSS mới vào `styles/components.css` hoặc `styles/screens.css`.
 
 Chi tiết các lỗi đã sửa và phần còn hoãn: `docs/07. Prototype Map Core Fixes.md`.

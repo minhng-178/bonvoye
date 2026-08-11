@@ -1,0 +1,65 @@
+/* BonVoye design tokens. Keep visual decisions here; components consume variables. */
+:root {
+  --terracotta: #b4472b;
+  --terracotta-d: #8f3620;
+  --ochre: #c98a3c;
+  --ochre-l: #ddab68;
+  --cream: #f2e6ce;
+  --cream-d: #e4d3b3;
+  --jade: #4f6f52;
+  --jade-l: #7a9b78;
+  --water: #cfe0dc;
+  --sand: #ded1b4;
+
+  --ink: #241c16;
+  --ink-70: #4d423a;
+  --ink-45: #7c7168;
+  --ink-20: #c4bab0;
+  --paper: #faf5ea;
+  --paper-2: #f2ead9;
+  --line: #ddd2be;
+
+  --night: #16212b;
+  --night-2: #1f2f3c;
+  --night-3: #2b3f4f;
+
+  --danger: #c0392b;
+  --warn: #c98a3c;
+  --ok: #4f8a5b;
+  --info: #3d6b8e;
+
+  --bench: #14181c;
+  --bench-2: #1b2126;
+  --bench-3: #242c33;
+  --bench-line: #333d45;
+  --bench-fg: #cdd6dd;
+  --bench-fg-dim: #7f8c96;
+
+  --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --r-s: 8px;
+  --r-m: 14px;
+  --r-l: 22px;
+  --r-xl: 30px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --shadow-card: 0 4px 16px rgba(36, 28, 22, 0.08);
+  --shadow-float: 0 12px 32px rgba(36, 28, 22, 0.18);
+  --z-content: 1;
+  --z-hud: 40;
+  --z-nav: 55;
+  --z-scrim: 70;
+  --z-sheet: 75;
+  --z-dialog: 80;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(180, 71, 43, 0.42);
+  outline-offset: 2px;
+}

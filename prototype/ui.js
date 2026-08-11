@@ -307,6 +307,46 @@ const ROUTES = [
     label: "Nội dung bị khoá — Entitlement",               sub: "TD §10" },
   { hash: "15-partner-code-success", num: "15", group: T.groups.interact,
     label: "Mở khoá mã đối tác thành công",                 sub: "B2B2C" },
+  { hash: "16-floor-picker", num: "16", group: T.groups.interact,
+    label: "Chọn tầng (Hầm vs Lầu)",                       sub: "In-App" },
+  { hash: "17-npc-series", num: "17", group: T.groups.interact,
+    label: "Chuỗi nhiệm vụ NPC (Nhiều POI)",                 sub: "In-App" },
+  { hash: "18-search", num: "18", group: "KHÁM PHÁ",
+    label: "Tìm kiếm — Gợi ý & gần đây",                    sub: "M2 · 4.1.3" },
+  { hash: "18b-search-results", num: "18b", group: "KHÁM PHÁ",
+    label: "Tìm kiếm — Kết quả",                             sub: "M2 · 4.1.3" },
+  { hash: "18c-search-empty", num: "18c", group: "KHÁM PHÁ",
+    label: "Tìm kiếm — Trạng thái rỗng",                     sub: "M2 · 4.1.3" },
+  { hash: "19-poi-detail", num: "19", group: "KHÁM PHÁ",
+    label: "POI Detail — Có thể khám phá",                   sub: "M2 · 4.2.1" },
+  { hash: "19b-poi-detail-locked", num: "19b", group: "KHÁM PHÁ",
+    label: "POI Detail — Bị khoá",                           sub: "M2 · Entitlement" },
+  { hash: "19c-poi-detail-offline", num: "19c", group: "KHÁM PHÁ",
+    label: "POI Detail — Offline-ready",                     sub: "M3 · Offline" },
+  { hash: "20-offers", num: "20", group: "MUA & PLANNER",
+    label: "Mở khoá — Chọn gói",                              sub: "M3 · 5.2–5.3" },
+  { hash: "20b-purchase-processing", num: "20b", group: "MUA & PLANNER",
+    label: "Thanh toán — Đang xác nhận",                      sub: "M3 · IAP" },
+  { hash: "20c-purchase-success", num: "20c", group: "MUA & PLANNER",
+    label: "Thanh toán — Thành công",                         sub: "M3 · Entitlement" },
+  { hash: "20d-purchase-failure", num: "20d", group: "MUA & PLANNER",
+    label: "Thanh toán — Lỗi / huỷ",                          sub: "M3 · Recovery" },
+  { hash: "21-restore-purchases", num: "21", group: "MUA & PLANNER",
+    label: "Khôi phục giao dịch",                             sub: "M3 · 5.4" },
+  { hash: "21b-restore-success", num: "21b", group: "MUA & PLANNER",
+    label: "Khôi phục — Thành công",                         sub: "M3 · 5.4" },
+  { hash: "21c-restore-empty", num: "21c", group: "MUA & PLANNER",
+    label: "Khôi phục — Không có giao dịch",                  sub: "M3 · 5.4" },
+  { hash: "22-trip-select", num: "22", group: "MUA & PLANNER",
+    label: "Trip Planner — Chọn điểm",                        sub: "M3 · 5.1" },
+  { hash: "22b-trip-duration", num: "22b", group: "MUA & PLANNER",
+    label: "Trip Planner — Thời lượng",                       sub: "M3 · 5.1" },
+  { hash: "23-trip-generated", num: "23", group: "MUA & PLANNER",
+    label: "Trip Planner — Tuyến gợi ý",                      sub: "M3 · 5.1" },
+  { hash: "23b-trip-edit", num: "23b", group: "MUA & PLANNER",
+    label: "Trip Planner — Chỉnh tuyến",                      sub: "M3 · 5.1" },
+  { hash: "23c-trip-saved", num: "23c", group: "MUA & PLANNER",
+    label: "Trip Planner — Đã lưu",                           sub: "M3 · 5.1" },
 ];
 
 function routeFor(hash) {
@@ -378,6 +418,19 @@ function screen(bodyHtml, sbDark) {
     bannerHtml = '<div class="banner' + toneCls + '" style="z-index:85"><b>' + S.banner.text + '</b></div>';
   }
   return statusBar(sbDark) + bodyHtml + bannerHtml + '<div class="' + hb.trim() + '"></div>';
+}
+
+/* Namespaced compatibility exports for the reusable prototype layer. */
+window.BV_SCREEN = screen;
+window.BV_TABBAR = renderTabbar;
+window.BV_TEXT_VI = T;
+window.S = S;
+window.E = E;
+window.DB = DB;
+window.Art = Art;
+if (window.BV_CONFIG) {
+  window.BV_CONFIG.copy = window.BV_CONFIG.copy || {};
+  window.BV_CONFIG.copy.vi = T;
 }
 
 function formatTime(s) {
@@ -1092,7 +1145,7 @@ function renderStory() {
 function renderProfile() {
   var s = '<div class="body scroll">';
   s += '<div style="padding:16px 20px 80px">';
-  
+
   // Profile Header with Avatar
   s += '<div class="profile-header-card">' +
          '<div class="avatar-container">' +
@@ -1400,6 +1453,123 @@ function renderPartnerCodeSuccess() {
   return s;
 }
 
+/* --- 16 · FLOOR PICKER ------------------------------------------------- */
+function renderFloorPicker() {
+  var s = '<div class="scrim" onclick="event.stopPropagation();"></div>';
+  s += '<div class="sheet"><div class="sheet-grip"></div>';
+  s += '<div class="sheet-head" style="text-align: center;"><b class="h3" style="color:var(--primary); font-size:18px;">Chọn Vị Trí Của Bạn</b>';
+  s += '<div class="tiny" style="margin-top:6px; color:var(--ink-70); font-size:12px; line-height:1.4;">Bạn đã vào vùng di tích đa tầng của <b>Dinh Thự Cổ</b>. Vui lòng xác nhận tầng hiện tại để phát câu chuyện chính xác.</div></div>';
+  s += '<div class="sheet-body" style="gap:10px; display:flex; flex-direction:column; margin-top:16px; width:100%; box-sizing:border-box;">';
+
+  // Tầng Lầu
+  s += '<button class="rowbtn" style="border: 2px solid var(--outline); background: var(--paper-2); padding: 10px 14px; border-radius: 12px; display:flex; align-items:center; cursor:pointer;" onclick="event.stopPropagation(); E.userInteraction(); resetOverlay(); openStory(\'p-oquanchuong\',\'n-linhcanh\')">';
+  s += '<div class="ic" style="width:36px; height:36px; border-radius:8px; background:var(--secondary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; margin-right:12px; font-size:15px; flex-shrink:0;">L1</div>';
+  s += '<div class="grow" style="text-align:left; flex-grow:1;">';
+  s += '<b style="font-size:14px; color:var(--ink); display:block;">Ban Công Lầu 1</b>';
+  s += '<span style="font-size:11px; display:block; color:var(--ink-70); margin-top:2px;">Chuyện tình ngắm trăng · NPC Tiểu Thư</span>';
+  s += '</div>';
+  s += '<span style="font-size:18px; color:var(--primary); font-weight:bold; margin-left:8px;">→</span>';
+  s += '</button>';
+
+  // Tầng Trệt
+  s += '<button class="rowbtn" style="border: 2px solid var(--outline); background: var(--paper-2); padding: 10px 14px; border-radius: 12px; display:flex; align-items:center; cursor:pointer;" onclick="event.stopPropagation(); E.userInteraction(); resetOverlay(); openStory(\'p-oquanchuong\',\'n-baket\')">';
+  s += '<div class="ic" style="width:36px; height:36px; border-radius:8px; background:var(--tertiary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; margin-right:12px; font-size:15px; flex-shrink:0;">G</div>';
+  s += '<div class="grow" style="text-align:left; flex-grow:1;">';
+  s += '<b style="font-size:14px; color:var(--ink); display:block;">Tầng Trệt</b>';
+  s += '<span style="font-size:11px; display:block; color:var(--ink-70); margin-top:2px;">Nhật ký Dinh Thự · NPC Quản Gia</span>';
+  s += '</div>';
+  s += '<span style="font-size:18px; color:var(--primary); font-weight:bold; margin-left:8px;">→</span>';
+  s += '</button>';
+
+  // Tầng Hầm
+  s += '<button class="rowbtn" style="border: 2px solid var(--outline); background: var(--paper-2); padding: 10px 14px; border-radius: 12px; display:flex; align-items:center; cursor:pointer;" onclick="event.stopPropagation(); E.userInteraction(); resetOverlay(); openStory(\'p-oquanchuong\',\'n-linhcanh\')">';
+  s += '<div class="ic" style="width:36px; height:36px; border-radius:8px; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; margin-right:12px; font-size:15px; flex-shrink:0;">B1</div>';
+  s += '<div class="grow" style="text-align:left; flex-grow:1;">';
+  s += '<b style="font-size:14px; color:var(--ink); display:block;">Hầm Ngầm Dưới Đất</b>';
+  s += '<span style="font-size:11px; display:block; color:var(--ink-70); margin-top:2px;">Chuyện vượt ngục · NPC Lính Canh</span>';
+  s += '</div>';
+  s += '<span style="font-size:18px; color:var(--primary); font-weight:bold; margin-left:8px;">→</span>';
+  s += '</button>';
+
+  s += '<button class="btn ghost" style="margin-top:10px; width:100%;" onclick="event.stopPropagation(); E.userInteraction(); resetOverlay(); S.route=\'02-map\'; E.notify()">' + T.later + '</button>';
+  s += '</div></div>';
+  return s;
+}
+
+/* --- 17 · NPC MULTI-POI SERIES ----------------------------------------- */
+function renderNpcSeries() {
+  var s = '<div class="scrim" onclick="event.stopPropagation();"></div>';
+  s += '<div class="sheet tall"><div class="sheet-grip"></div>';
+
+  // Header của NPC
+  s += '<div class="sheet-head" style="display:flex; align-items:center; gap:12px; margin-bottom:12px; border-bottom:1px solid var(--outline); padding-bottom:12px; width:100%; box-sizing:border-box;">';
+  s += '<div style="width:46px; height:46px; border-radius:12px; background:var(--paper-2); overflow:hidden; border:2px solid var(--outline); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:24px;">👦</div>';
+  s += '<div class="grow" style="text-align:left; flex-grow:1;">';
+  s += '<b class="h3" style="color:var(--primary); font-size:16px; display:block;">Tiểu Hòa Thượng</b>';
+  s += '<span style="font-size:11px; color:var(--ink-70); display:block; margin-top:2px;">Chuỗi hành trình nhiệm vụ tại Chùa Tĩnh An</span>';
+  s += '</div>';
+  s += '<button class="sheet-x" style="position:static; margin-left:auto; cursor:pointer;" onclick="event.stopPropagation(); E.userInteraction(); resetOverlay(); S.route=\'02-map\'; E.notify()">✕</button>';
+  s += '</div>';
+
+  s += '<div class="sheet-body" style="padding:4px 0 20px; text-align:center;">';
+
+  // Tóm tắt tiến trình
+  s += '<div style="background:var(--paper-2); padding:10px 12px; border-radius:12px; border:1px solid var(--outline); margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; width:100%; box-sizing:border-box;">';
+  s += '<div style="text-align:left;"><span style="font-size:11px; color:var(--ink-70);">Tiến độ câu chuyện:</span><b style="display:block; font-size:13px; color:var(--ink); margin-top:2px;">Đã đi qua 1 / 3 địa điểm</b></div>';
+  s += '<div class="bar thin" style="width:80px; background:rgba(0,0,0,0.1); border-radius:4px; height:6px; overflow:hidden;"><i style="width:33.3%; background:var(--primary); display:block; height:100%;"></i></div>';
+  s += '</div>';
+
+  // Timeline dọc
+  s += '<div class="timeline" style="position:relative; padding-left:24px; display:flex; flex-direction:column; gap:16px; width:100%; box-sizing:border-box;">';
+
+  // Đường thẳng dọc nối các chấm
+  s += '<div style="position:absolute; left:7px; top:10px; bottom:10px; width:2px; background:var(--outline);"></div>';
+
+  // Chặng 1
+  s += '<div class="timeline-item" style="position:relative; display:flex; text-align:left;">';
+  s += '<div style="position:absolute; left:-24px; top:4px; width:16px; height:16px; border-radius:50%; background:var(--tertiary); border:3px solid var(--cream); box-shadow:0 0 0 1px var(--tertiary); display:flex; align-items:center; justify-content:center; color:#fff; font-size:9px; font-weight:bold;">✓</div>';
+  s += '<div class="grow" style="background:rgba(79, 111, 82, 0.06); border: 1px solid rgba(79, 111, 82, 0.2); padding:10px 12px; border-radius:12px; width:100%; box-sizing:border-box;">';
+  s += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+  s += '<b style="font-size:13px; color:var(--tertiary);">Chặng 1: Cổng Tam Quan</b>';
+  s += '<span style="font-size:9px; background:var(--tertiary); color:#fff; padding:1px 5px; border-radius:8px; font-weight:bold;">ĐÃ HOÀN THÀNH</span>';
+  s += '</div>';
+  s += '<p style="font-size:12px; color:var(--ink); margin-top:4px; font-weight:bold;">Sự tích rồng đá nghìn năm</p>';
+  s += '<p style="font-size:11px; color:var(--ink-70); margin-top:2px;">Tìm hiểu về nguồn gốc đá xanh cổ kính ở thềm cổng.</p>';
+  s += '</div>';
+  s += '</div>';
+
+  // Chặng 2
+  s += '<div class="timeline-item" style="position:relative; display:flex; text-align:left;">';
+  s += '<div style="position:absolute; left:-24px; top:4px; width:16px; height:16px; border-radius:50%; background:var(--primary); border:3px solid var(--cream); box-shadow:0 0 0 1px var(--primary); display:flex; align-items:center; justify-content:center; color:#fff; font-size:9px; font-weight:bold;">▶</div>';
+  s += '<div class="grow" style="background:var(--cream); border: 2px solid var(--primary); padding:10px 12px; border-radius:12px; width:100%; box-sizing:border-box;">';
+  s += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+  s += '<b style="font-size:13px; color:var(--primary);">Chặng 2: Đại Hùng Bảo Điện</b>';
+  s += '<span style="font-size:9px; background:var(--primary); color:#fff; padding:1px 5px; border-radius:8px; font-weight:bold;">TẠI ĐÂY</span>';
+  s += '</div>';
+  s += '<p style="font-size:12px; color:var(--ink); margin-top:4px; font-weight:bold;">Họa tiết rồng chầu trên mái cổ</p>';
+  s += '<p style="font-size:11px; color:var(--ink-70); margin-top:2px;">Lắng nghe điển tích mái ngói hoàng kim tỏa sáng.</p>';
+  s += '<button class="btn primary sm" style="margin-top:8px; width:100%; border-radius:8px; font-size:11px; padding:6px 0; font-weight:bold;" onclick="event.stopPropagation(); E.userInteraction(); resetOverlay(); openStory(\'p-oquanchuong\',\'n-linhcanh\')">🎧 Bắt đầu nghe chuyện (Bạn cách 15m)</button>';
+  s += '</div>';
+  s += '</div>';
+
+  // Chặng 3
+  s += '<div class="timeline-item" style="position:relative; display:flex; text-align:left; opacity:0.6;">';
+  s += '<div style="position:absolute; left:-24px; top:4px; width:16px; height:16px; border-radius:50%; background:var(--outline); border:3px solid var(--cream); box-shadow:0 0 0 1px var(--outline); display:flex; align-items:center; justify-content:center; color:var(--ink-70); font-size:9px; font-weight:bold;">🔒</div>';
+  s += '<div class="grow" style="background:var(--paper-2); border: 1px solid var(--outline); padding:10px 12px; border-radius:12px; width:100%; box-sizing:border-box;">';
+  s += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+  s += '<b style="font-size:13px; color:var(--ink-70);">Chặng 3: Tàng Kinh Các</b>';
+  s += '</div>';
+  s += '<p style="font-size:12px; color:var(--ink-45); margin-top:4px; font-weight:bold;">Kinh cổ lá bối truyền kỳ</p>';
+  s += '<p style="font-size:11px; color:var(--ink-45); margin-top:2px;">(Yêu cầu: Hoàn thành chặng 2 và di chuyển tới Tàng Kinh Các để mở khóa)</p>';
+  s += '</div>';
+  s += '</div>';
+
+  s += '</div>'; // /timeline
+
+  s += '</div></div>';
+  return s;
+}
+
 /* ==========================================================================
    6. INSPECTOR — 6 tab panels
    ======================================================================== */
@@ -1634,7 +1804,7 @@ function render() {
   var sc = document.getElementById("screen");
   var routeEntry = routeFor(S.route);
   var num = routeEntry.num;
-  var hasOverlayMap = ["04","05","06","08","12","13","14","15"].indexOf(num) >= 0;
+  var hasOverlayMap = ["04","05","06","08","12","13","14","15","16","17"].indexOf(num) >= 0;
 
   var bodyHtml = "";
   if (hasOverlayMap) bodyHtml = renderMap();
@@ -1657,11 +1827,32 @@ function render() {
     case "13": bodyHtml = renderMap() + renderUnlock(); break;
     case "14": bodyHtml = renderMap() + renderLocked(); break;
     case "15": bodyHtml = renderMap() + renderPartnerCodeSuccess(); break;
+    case "16": bodyHtml = renderMap() + renderFloorPicker(); break;
+    case "17": bodyHtml = renderMap() + renderNpcSeries(); break;
+    case "18": bodyHtml = window.renderSearch ? window.renderSearch() : renderHome(); break;
+    case "18b": bodyHtml = window.renderSearchResults ? window.renderSearchResults() : renderHome(); break;
+    case "18c": bodyHtml = window.renderSearchEmpty ? window.renderSearchEmpty() : renderHome(); break;
+    case "19": bodyHtml = window.renderPoiDetail ? window.renderPoiDetail() : renderHome(); break;
+    case "19b": bodyHtml = window.renderPoiDetailLocked ? window.renderPoiDetailLocked() : renderHome(); break;
+    case "19c": bodyHtml = window.renderPoiDetailOffline ? window.renderPoiDetailOffline() : renderHome(); break;
+    case "20": bodyHtml = window.renderOffers ? window.renderOffers() : renderHome(); break;
+    case "20b": bodyHtml = window.renderPurchaseProcessing ? window.renderPurchaseProcessing() : renderHome(); break;
+    case "20c": bodyHtml = window.renderPurchaseSuccess ? window.renderPurchaseSuccess() : renderHome(); break;
+    case "20d": bodyHtml = window.renderPurchaseFailure ? window.renderPurchaseFailure() : renderHome(); break;
+    case "21": bodyHtml = window.renderRestore ? window.renderRestore() : renderHome(); break;
+    case "21b": bodyHtml = window.renderRestoreSuccess ? window.renderRestoreSuccess() : renderHome(); break;
+    case "21c": bodyHtml = window.renderRestoreEmpty ? window.renderRestoreEmpty() : renderHome(); break;
+    case "22": bodyHtml = window.renderTripSelect ? window.renderTripSelect() : renderHome(); break;
+    case "22b": bodyHtml = window.renderTripDuration ? window.renderTripDuration() : renderHome(); break;
+    case "23": bodyHtml = window.renderTripGenerated ? window.renderTripGenerated() : renderHome(); break;
+    case "23b": bodyHtml = window.renderTripEdit ? window.renderTripEdit() : renderHome(); break;
+    case "23c": bodyHtml = window.renderTripSaved ? window.renderTripSaved() : renderHome(); break;
     default: bodyHtml = renderHome();
   }
 
-  var isDark = ["02","04","05","06","08","11","12","13","14","15"].indexOf(num) >= 0;
-  sc.innerHTML = screen(bodyHtml, isDark);
+  var isDark = ["02","04","05","06","08","11","12","13","14","15","16","17"].indexOf(num) >= 0;
+  var isReusableScreen = ["18","18b","18c","19","19b","19c","20","20b","20c","20d","21","21b","21c","22","22b","23","23b","23c"].indexOf(num) >= 0;
+  sc.innerHTML = isReusableScreen ? bodyHtml : screen(bodyHtml, isDark);
 
   setupMapInteractions();
   renderInspector();
