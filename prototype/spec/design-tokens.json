@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "1.0.0",
+  "source": "styles/tokens.css",
+  "viewport": {
+    "outer": { "width": 393, "height": 852 },
+    "screen": { "width": 371, "height": 830 },
+    "statusBarHeight": 50,
+    "homeIndicator": { "width": 134, "height": 5, "bottom": 7 },
+    "minimumTouchTarget": 44
+  },
+  "colors": {
+    "brand.primary": "#b4472b",
+    "brand.primaryPressed": "#8f3620",
+    "brand.secondary": "#c98a3c",
+    "surface.canvas": "#faf5ea",
+    "surface.subtle": "#f2ead9",
+    "surface.line": "#ddd2be",
+    "surface.dark": "#16212b",
+    "surface.darkElevated": "#1f2f3c",
+    "text.primary": "#241c16",
+    "text.secondary": "#4d423a",
+    "text.muted": "#7c7168",
+    "text.disabled": "#c4bab0",
+    "status.success": "#4f8a5b",
+    "status.warning": "#c98a3c",
+    "status.danger": "#c0392b",
+    "status.info": "#3d6b8e",
+    "map.water": "#cfe0dc",
+    "map.sand": "#ded1b4",
+    "workbench.background": "#14181c",
+    "workbench.surface": "#1b2126",
+    "workbench.line": "#333d45"
+  },
+  "typography": {
+    "display": { "family": "Georgia", "fallback": "Iowan Old Style, Times New Roman, serif", "size": 27, "lineHeight": 1.18, "weight": 400, "letterSpacing": -0.27 },
+    "title": { "family": "Georgia", "fallback": "Iowan Old Style, Times New Roman, serif", "size": 20, "lineHeight": 1.25, "weight": 400, "letterSpacing": 0 },
+    "label": { "family": "system", "size": 14, "lineHeight": 1.2, "weight": 650, "letterSpacing": 0.14 },
+    "body": { "family": "system", "size": 13, "lineHeight": 1.55, "weight": 400, "letterSpacing": 0 },
+    "caption": { "family": "system", "size": 11, "lineHeight": 1.45, "weight": 400, "letterSpacing": 0 },
+    "eyebrow": { "family": "system", "size": 10, "lineHeight": 1.2, "weight": 650, "letterSpacing": 1.5, "transform": "uppercase" },
+    "mono": { "family": "ui-monospace", "fallback": "SF Mono, Menlo, Consolas, monospace", "size": 11, "lineHeight": 1.3, "weight": 400, "letterSpacing": 0 }
+  },
+  "spacing": { "1": 4, "2": 8, "3": 12, "4": 16, "5": 20, "6": 24 },
+  "radii": { "small": 8, "medium": 14, "large": 22, "extraLarge": 30 },
+  "elevation": {
+    "card": "0 4px 16px rgba(36, 28, 22, 0.08)",
+    "floating": "0 12px 32px rgba(36, 28, 22, 0.18)"
+  },
+  "layers": {
+    "content": 1,
+    "hud": 40,
+    "navigation": 55,
+    "scrim": 70,
+    "sheet": 75,
+    "dialog": 80
+  },
+  "motion": {
+    "flowFadeMs": 240,
+    "spinnerPeriodMs": 800,
+    "fakeGpsBannerMs": 6000
+  },
+  "flutterMapping": {
+    "theme": "ThemeData + ColorScheme.fromSeed with explicit semantic overrides",
+    "spacing": "EdgeInsets and SizedBox values in logical pixels",
+    "radii": "BorderRadius.circular(value)",
+    "elevation": "CardTheme.shadowColor/shadow and Material elevation where equivalent",
+    "displayFont": "Bundle a licensed serif font or use the documented fallback; do not depend on a network font"
+  }
+}

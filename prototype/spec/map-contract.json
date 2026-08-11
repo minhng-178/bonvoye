@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "1.0.0",
+  "source": ["mockup.js", "data.js", "engine.js"],
+  "coordinateSystems": {
+    "gps": { "authority": "runtime geofence/distance", "fields": ["lat", "lng"], "units": "degrees" },
+    "webMercator": { "authority": "real map visual layer", "tileSize": 256, "zoom": "integer", "projection": "EPSG:3857", "functions": ["worldPx", "mPerPx", "toScreen"] },
+    "artwork": { "authority": "illustration display only", "fields": ["x", "y"], "units": "artwork pixels", "transform": "calibrated affine transform" }
+  },
+  "viewport": { "defaultWidth": 371, "defaultHeight": 780, "phoneWidth": 393, "phoneHeight": 852, "statusBarHeight": 50 },
+  "layerOrder": [
+    "baseMapTiles",
+    "artworkFallback",
+    "siteGeofence",
+    "routeUnderlay",
+    "routeLine",
+    "routeStop",
+    "poiZones",
+    "poiLabels",
+    "poiMarkers",
+    "npcMarkers",
+    "userLocationAccuracy",
+    "hud",
+    "tabBar"
+  ],
+  "mapSurfaceVariants": {
+    "realMap": { "tiles": "OSM or Mapbox", "artwork": false, "networkRequired": true },
+    "artwork": { "tiles": false, "artwork": true, "networkRequired": false },
+    "hybrid": { "tiles": "OSM or Mapbox", "artwork": "optional low-opacity fallback", "networkRequired": false },
+    "offline": { "tiles": "cached tile pack", "artwork": "optional", "networkRequired": false }
+  },
+  "geometry": {
+    "siteGeofence": ["radius", "polygon"],
+    "poiInteraction": ["radius", "polygon"],
+    "radius": { "enter": "enter_radius_m", "exit": "exit_radius_m", "units": "meters" },
+    "polygon": { "vertices": "lat/lng array", "buffer": "area_buffer_m", "containment": "GPS point in polygon" },
+    "displayRule": "Use GPS geometry for interaction; use artwork_position only for illustration placement."
+  },
+  "proximityModels": {
+    "today": { "id": "npc20", "target": "individual NPC", "enterRadiusM": 20, "hysteresis": false, "dwellSeconds": 0 },
+    "afterCms": { "id": "poi2535", "target": "POI", "enterRadiusM": 25, "exitRadiusM": 35, "dwellSeconds": 3, "states": ["far", "entering", "near_confirmed"] }
+  },
+  "fakeGps": {
+    "defaultLimitM": 300,
+    "polygonMarginM": 50,
+    "arrivedM": 50,
+    "expiryMs": 900000,
+    "goodSignalBufferMs": 60000,
+    "resetPrecedence": ["expiry", "realGpsArrived", "leftPoiContext", "goodGpsStable"],
+    "rules": [
+      "Fake position wins over measured position until reset.",
+      "Reset is deferred while audio is playing.",
+      "Deferred reset is applied at the next user interaction.",
+      "Reset banner is non-blocking and lasts 6000ms."
+    ]
+  },
+  "offline": {
+    "downloadStates": ["not_downloaded", "downloading", "paused", "verifying", "ready"],
+    "resumeKeepsDownloadedBytes": true,
+    "readyRequiresVerification": true,
+    "focusModeDimsNonReadyPois": true,
+    "offlinePoiRequiresReadyPackage": true
+  },
+  "flutterMapping": {
+    "widget": "MapSurface",
+    "recommendedStructure": "Stack(mapLayer, artworkLayer?, geofenceLayer, routeLayer, markerLayer, locationLayer, hud, tabBar)",
+    "provider": "Keep provider-specific MapController behind a MapPort interface.",
+    "goldenTests": "Use deterministic local fixtures; do not depend on live OSM tiles for screenshot tests."
+  }
+}

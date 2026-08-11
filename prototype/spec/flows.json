@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0.0",
+  "source": "flow.js",
+  "stepContract": {
+    "requiredFields": ["stepId", "screenId", "given", "when", "then"],
+    "optionalFields": ["tap", "durationMs", "stateSeed", "visibleActions"],
+    "note": "Existing flow.js build functions remain the executable fixture. New Flutter flows should use the same stable IDs and assertions."
+  },
+  "flows": [
+    { "id": "mo-dau", "title": "Mở đầu → nghe chuyện đầu tiên", "stepCount": 12, "routes": ["00-splash", "00b-login", "01-home", "03-permission", "02-map", "06-story", "07-journey", "07b-profile"] },
+    { "id": "nhieu-npc", "title": "Nhiều người kể chuyện", "stepCount": 5, "routes": ["02-map", "05-chooser", "06-story", "07-journey"] },
+    { "id": "fake-gps", "title": "Fake GPS — kéo vị trí khi test", "stepCount": 6, "routes": ["02-map", "04-dev", "08-drag", "03-permission"] },
+    { "id": "ngoai-tuyen", "title": "Ngoại tuyến — tải gói trước", "stepCount": 7, "routes": ["02-map", "12-download", "19c-poi-detail-offline"] },
+    { "id": "khoa", "title": "Khoá & mở khoá", "stepCount": 5, "routes": ["14-locked", "20-offers", "13-unlock", "02-map"] },
+    { "id": "quyen-nen", "title": "Quyền & chạy nền", "stepCount": 4, "routes": ["10-permission", "11-geofence", "02-map"] },
+    { "id": "partner-code", "title": "Mã đối tác (B2B2C)", "stepCount": 5, "routes": ["15-partner-code-success", "14-locked", "02-map"] },
+    { "id": "discovery", "title": "Khám phá nội dung", "stepCount": 7, "routes": ["18-search", "18b-search-results", "18c-search-empty", "19-poi-detail", "19c-poi-detail-offline", "19b-poi-detail-locked", "20-offers"] },
+    { "id": "commerce", "title": "Mua và khôi phục nội dung", "stepCount": 7, "routes": ["20-offers", "20b-purchase-processing", "20c-purchase-success", "20d-purchase-failure", "21-restore-purchases", "21b-restore-success", "21c-restore-empty"] },
+    { "id": "planner", "title": "Lên lịch một chuyến đi", "stepCount": 5, "routes": ["22-trip-select", "22b-trip-duration", "23-trip-generated", "23b-trip-edit", "23c-trip-saved"] }
+  ],
+  "transitionAssertions": [
+    { "id": "planner-route", "flowId": "planner", "from": "22-trip-select", "to": "22b-trip-duration", "actionId": "continueTripPlanner" },
+    { "id": "planner-generate", "flowId": "planner", "from": "22b-trip-duration", "to": "23-trip-generated", "actionId": "generateTrip" },
+    { "id": "planner-edit", "flowId": "planner", "from": "23-trip-generated", "to": "23b-trip-edit", "actionId": "editTrip" },
+    { "id": "planner-save", "flowId": "planner", "from": "23b-trip-edit", "to": "23c-trip-saved", "actionId": "saveTrip" },
+    { "id": "commerce-retry", "flowId": "commerce", "from": "20d-purchase-failure", "to": "20b-purchase-processing", "actionId": "retryPurchase" }
+  ]
+}

@@ -37,6 +37,44 @@ trạng thái ấy thành 10 luồng có thứ tự trên một khung máy duy n
 
 ---
 
+## Flutter handoff — nguồn để Agent sinh Widget
+
+Prototype vẫn là HTML/CSS để review bằng mắt, nhưng phần contract dành cho Flutter nằm trong `spec/` và không phụ thuộc vào DOM:
+
+| File | Dùng để |
+|---|---|
+| `spec/manifest.json` | entry point của Flutter handoff và danh sách nguồn runtime/visual reference |
+| `spec/design-tokens.json` | viewport 393×852, màu semantic, typography, spacing, radius, elevation, layer và motion |
+| `spec/components.json` | contract của Button, Card, Row, Sheet, MapSurface và các reusable Widget |
+| `spec/screens.json` | screen ID, route, state seed, widget tree, action IDs và scroll behavior |
+| `spec/actions.json` | payload, guard và side effect của callback; không port inline `S` mutation vào Flutter |
+| `spec/flows.json` | 10 flow, route coverage và transition assertions |
+| `spec/map-contract.json` | GPS/Web Mercator/artwork, layer order, geofence, proximity, fake GPS và offline |
+| `spec/state-machines.json` | shape domain và các state machine cần chuyển thành controller/notifier/service |
+
+Thứ tự đọc khi build Flutter:
+
+```text
+spec/design-tokens.json
+→ spec/components.json
+→ spec/screens.json + spec/actions.json
+→ spec/state-machines.json + spec/map-contract.json
+→ spec/flows.json
+→ mockup.html#solo=<n> để đối chiếu screenshot
+```
+
+Các helper hiện tại phát thêm `data-bv-component`, `data-bv-variant`, `data-bv-state`, `data-bv-action`, `data-bv-testid` và `data-bv-screen`. Metadata này không đổi visual output, nhưng giúp Agent hoặc test harness nhận diện đúng Widget contract. `mockup.js` và `flow.js` cũng xuất stable scene/step IDs để không phải dựa vào index của gallery.
+
+Kiểm tra handoff bằng Node:
+
+```bash
+node tools/validate-flutter-spec.js
+```
+
+Static fixture chỉ mô tả trạng thái để review; logic production vẫn phải lấy từ `data.js`/`engine.js` và chuyển sang action dispatcher + state layer của Flutter.
+
+---
+
 ## `flow.html` — bản để quay video
 
 ```
@@ -47,20 +85,21 @@ open 'flow.html#rec'              # mở sẵn ở chế độ ghi hình
 
 | Luồng | id | Bước |
 |---|---|---|
-| Mở đầu → nghe chuyện đầu tiên | `mo-dau` | 9 |
+| Mở đầu → nghe chuyện đầu tiên | `mo-dau` | 12 |
 | Nhiều người kể chuyện | `nhieu-npc` | 5 |
 | Fake GPS — kéo vị trí khi test | `fake-gps` | 6 |
 | Ngoại tuyến — tải gói trước | `ngoai-tuyen` | 7 |
 | Khoá & mở khoá | `khoa` | 5 |
 | Quyền & chạy nền | `quyen-nen` | 4 |
 | Mã đối tác B2B2C | `partner-code` | 5 |
-| Khám phá nội dung | `discovery` | 5 |
-| Mua và khôi phục nội dung | `commerce` | 5 |
+| Khám phá nội dung | `discovery` | 7 |
+| Mua và khôi phục nội dung | `commerce` | 7 |
 | Lên lịch một chuyến đi | `planner` | 5 |
 
-Phím: `←` `→` lùi/tiến · `Space` phát luồng này · `Shift+Space` phát liên tục hết 6
-luồng · `R` chế độ ghi hình · `C` phụ đề đè lên khung · `1`–`6` nhảy luồng ·
-`Home`/`End` đầu/cuối luồng. Bấm thẳng vào khung máy cũng là sang bước kế.
+Tổng cộng 10 luồng / 63 bước. Phím: `←` `→` lùi/tiến · `Space` phát luồng này ·
+`Shift+Space` phát liên tục hết 10 luồng · `R` chế độ ghi hình · `C` phụ đề đè lên khung ·
+`1`–`9` hoặc `0` để nhảy luồng 1–10 · `Home`/`End` đầu/cuối luồng. Bấm thẳng vào khung
+máy cũng là sang bước kế.
 
 **Cách quay:** bấm `R` (ẩn hết chữ quanh khung), kéo cửa sổ cao ≥ 1010px để khung
 giữ đúng 393×852 **không bị thu nhỏ** — quay ở tỉ lệ lẻ là chữ bị nhoè. Rồi `Space`
@@ -77,24 +116,29 @@ Web Mercator và bán kính tính bằng mét thật chỉ có **một** bản t
 
 | # | Màn | Nguồn | Route |
 |---|---|---|---|
-| 01 | Home — chọn city/topic | PHẦN 1–2 | `#01-home` |
-| 02 | Bản đồ (2 lớp SVG, pin, nhãn, NPC) | PHẦN 6b | `#02-map` |
-| 03 | Xin quyền vị trí (OS dialog) | PHẦN 9 | `#03-permission` |
-| 04 | Dev panel — mô phỏng GPS | PHẦN 4–5, 10 | `#04-dev` |
-| 05 | NPC chooser (≥2 NPC) | PHẦN 6 | `#05-chooser` |
-| 06 | Story sheet — audio/webtoon | PHẦN 7 | `#06-story` |
-| 07 | Hành Trình (đã xong, Series) | PHẦN 8 | `#07-journey` |
-| 08 | Kéo vị trí Fake GPS | PHẦN 4 | `#08-drag` |
-| 10 | Xin quyền generic (4 case) | PHẦN 9 | `#10-permission` |
-| 11 | Màn khoá / Geofence background | PHẦN 8 | `#11-geofence` |
-| 12 | Tải gói Offline (resume + verify) | PHẦN 9b | `#12-download` |
-| 13 | Popup mở khoá Hidden Thread | PHẦN 8 | `#13-unlock` |
-| 14 | Nội dung bị khoá (entitlement) | TD §10 (suy ra) | `#14-locked` |
-| 18 | Search / browse / empty | WBS 4.1.2–4.1.3 | `#18-search` |
-| 19 | POI detail (available / locked / offline) | WBS 4.2.1 | `#19-poi-detail` |
-| 20 | Offers / purchase states | WBS 5.2–5.3 | `#20-offers` |
-| 21 | Restore purchases | WBS 5.4 | `#21-restore-purchases` |
-| 22–23 | Trip Planner | WBS 5.1 | `#22-trip-select` |
+| 00 | Splash / Login | Design System §5 | `00-splash`, `00b-login` |
+| 01 | Home — chọn city/topic | PHẦN 1–2 | `01-home` |
+| 02 | Bản đồ (2 lớp SVG, pin, nhãn, NPC) | PHẦN 6b | `02-map` |
+| 03 | Xin quyền vị trí (OS dialog) | PHẦN 9 | `03-permission` |
+| 04 | Dev panel — mô phỏng GPS | PHẦN 4–5, 10 | `04-dev` |
+| 05 | NPC chooser (≥2 NPC) | PHẦN 6 | `05-chooser` |
+| 06 | Story sheet — audio/webtoon | PHẦN 7 | `06-story` |
+| 07 | Hành Trình (đã xong, Series) | PHẦN 8 | `07-journey` |
+| 07b | Hồ sơ cá nhân | WBS 2.2.2 | `07b-profile` |
+| 08 | Kéo vị trí Fake GPS | PHẦN 4 | `08-drag` |
+| 10 | Xin quyền generic (4 case) | PHẦN 9 | `10-permission` |
+| 11 | Màn khoá / Geofence background | PHẦN 8–9 | `11-geofence` |
+| 12 | Tải gói Offline (resume + verify) | PHẦN 9b | `12-download` |
+| 13 | Popup mở khoá Hidden Thread | PHẦN 8 | `13-unlock` |
+| 14 | Nội dung bị khoá (entitlement) | TD §10 (suy ra) | `14-locked` |
+| 15 | Partner Code — mở khoá thành công | WBS 6.1–6.2 | `15-partner-code-success` |
+| 16 | Floor Picker | PHẦN 6b | `16-floor-picker` |
+| 17 | NPC Series / Questline | PHẦN 8 | `17-npc-series` |
+| 18 | Search / browse / empty | WBS 4.1.2–4.1.3 | `18-search`, `18b-search-results`, `18c-search-empty` |
+| 19 | POI detail (available / locked / offline) | WBS 4.2.1 | `19-poi-detail`, `19b-poi-detail-locked`, `19c-poi-detail-offline` |
+| 20 | Offers / purchase states | WBS 5.2–5.3 | `20-offers`, `20b–20d` |
+| 21 | Restore purchases | WBS 5.4 | `21-restore-purchases`, `21b–21c` |
+| 22–23 | Trip Planner | WBS 5.1 | `22-trip-select` → `23c-trip-saved` |
 
 ---
 
@@ -151,7 +195,10 @@ styles/workbench.css    — workbench additions
 
 app.css      — legacy-compatible shell/map/inspector/screen styles
 mockup.js    — existing scene harness + OSM/Web Mercator; exports `window.MU`
-flow.js      — 10 recording flows / 50+ steps
+flow.js      — 10 recording flows / 63 steps; exports stable flow/step IDs
+
+spec/        — Flutter handoff contracts: tokens, components, screens, actions, flows, map, state machines
+tools/       — no-build validation scripts (`node tools/validate-flutter-spec.js`)
 
 data.js     — CONSTANTS + mock cây 8 cấp
 engine.js    — 3 máy trạng thái + haversine + progress + audio
@@ -166,5 +213,7 @@ ui.js        — legacy router/renderers + compatibility adapters for new screen
 3. Tạo renderer dưới `src/screens/`, trả về `BV_UI.layout.frame(...)`.
 4. Thêm route adapter trong `ui.js` và static scene trong `src/scenes/next-scenes.js`.
 5. Chỉ thêm CSS mới vào `styles/components.css` hoặc `styles/screens.css`.
+6. Thêm screen/action/component entry tương ứng trong `spec/` và chạy `node tools/validate-flutter-spec.js`.
+7. Gắn `screenId`, `actionId`, `testId` và semantics trước khi thêm fixture mới để Flutter không phải suy luận từ class CSS.
 
 Chi tiết các lỗi đã sửa và phần còn hoãn: `docs/07. Prototype Map Core Fixes.md`.

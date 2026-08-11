@@ -30,7 +30,16 @@ function flow(id, title, sub) {
   CUR = { id: id, title: title, sub: sub, steps: [] };
   FLOWS.push(CUR);
 }
-function step(o) { CUR.steps.push(o); }
+function step(o) {
+  o = o || {};
+  o.stepId = o.stepId || CUR.id + "." + (CUR.steps.length + 1);
+  o.screenId = o.screenId || "flow." + o.stepId;
+  o.screenKind = o.screenKind || "flowFixture";
+  o.given = o.given || "Fixture reset before rendering this step.";
+  o.when = o.when || "Navigate to " + o.stepId;
+  o.then = o.then || o.cap || "Expected screen is rendered.";
+  CUR.steps.push(o);
+}
 
 var CUAO = "s-cuao";
 var VANMIEU = "s-vanmieu";
@@ -858,33 +867,59 @@ step({
    Home → Search → Results → POI detail → unlock/download.
    ═════════════════════════════════════════════════════════════════════════ */
 
-flow("discovery", "Khám phá nội dung", "Tìm kiếm · POI detail · 5 bước");
+flow("discovery", "Khám phá nội dung", "Tìm kiếm · POI detail · 7 bước");
 
 step({
+  stepId: "discovery.search",
+  screenId: "search.initial",
   cap: "Tìm kiếm — Gợi ý cho bạn",
   say: "Thay vì chỉ chờ GPS, người dùng có thể chủ động duyệt nội dung theo thành phố, chủ đề hoặc tên di tích.",
   ms: 4200,
   build: function () { base(); S.selectedPoiId = "p-oquanchuong"; return renderSearch(); },
 });
 step({
+  stepId: "discovery.results",
+  screenId: "search.results",
   cap: "Kết quả tìm kiếm",
   say: "Kết quả dùng chung cây nội dung của app: điểm dừng, người kể và câu chuyện đều dẫn về cùng một POI detail.",
   ms: 4200,
   build: function () { base(); S.selectedPoiId = "p-oquanchuong"; return renderSearchResults(); },
 });
 step({
+  stepId: "discovery.empty",
+  screenId: "search.empty",
+  cap: "Tìm kiếm — không có kết quả",
+  say: "Khi truy vấn không khớp nội dung, trạng thái rỗng vẫn đưa người dùng về tìm kiếm hoặc Home thay vì để lại một danh sách trống.",
+  ms: 3800,
+  build: function () { base(); S.selectedPoiId = "p-oquanchuong"; return renderSearchEmpty(); },
+});
+step({
+  stepId: "discovery.available",
+  screenId: "poi-detail.available",
   cap: "POI detail — có thể khám phá",
   say: "POI detail gom tóm tắt, thời lượng, người kể và trạng thái tải vào một chỗ trước khi người dùng ra đường.",
   ms: 4600,
   build: function () { base(); return renderPoiDetail(); },
 });
 step({
+  stepId: "discovery.offline",
+  screenId: "poi-detail.offline",
+  cap: "POI detail — đã có offline",
+  say: "POI đã tải sẵn vẫn mở được khi mất mạng, với đường vào bản đồ và story không phụ thuộc request mới.",
+  ms: 4200,
+  build: function () { base(); return renderPoiDetailOffline(); },
+});
+step({
+  stepId: "discovery.locked",
+  screenId: "poi-detail.locked",
   cap: "POI detail — nội dung bị khoá",
   say: "Nếu nội dung yêu cầu entitlement, người dùng vẫn xem được giá trị của điểm đến trước khi quyết định mở khoá.",
   ms: 4400,
   build: function () { base(); return renderPoiDetailLocked(); },
 });
 step({
+  stepId: "discovery.offers",
+  screenId: "offers.initial",
   cap: "Mở gói hoặc tải offline",
   say: "Từ POI detail, người dùng đi thẳng sang mở khoá hoặc tải gói offline; hai hành động này không bị trộn vào màn bản đồ.",
   ms: 4200,
@@ -895,36 +930,62 @@ step({
    LUỒNG 9 — Mua và khôi phục
    ═════════════════════════════════════════════════════════════════════════ */
 
-flow("commerce", "Mua và khôi phục nội dung", "Offers · IAP mock · restore · 5 bước");
+flow("commerce", "Mua và khôi phục nội dung", "Offers · IAP mock · restore · 7 bước");
 step({
+  stepId: "commerce.offers",
+  screenId: "offers.initial",
   cap: "Chọn gói nội dung",
   say: "Các gói POI, tuyến, thành phố và hội viên được trình bày cùng một component option nhưng lấy dữ liệu từ config.",
   ms: 4200,
   build: function () { base(); return renderOffers(); },
 });
 step({
+  stepId: "commerce.processing",
+  screenId: "purchase.processing",
   cap: "Đang xác nhận giao dịch",
   say: "Prototype chỉ mô phỏng trạng thái chờ receipt validation; không giả vờ dựng lại màn system của Apple hoặc Google.",
   ms: 4200,
   build: function () { base(); return renderPurchaseProcessing(); },
 });
 step({
+  stepId: "commerce.success",
+  screenId: "purchase.success",
   cap: "Mua thành công",
   say: "Sau khi backend xác nhận, entitlement được cấp và người dùng có đường đi rõ ràng tới tải offline hoặc khám phá.",
   ms: 4200,
   build: function () { base(); return renderPurchaseSuccess(); },
 });
 step({
+  stepId: "commerce.failure",
+  screenId: "purchase.failure",
+  cap: "Mua thất bại hoặc bị huỷ",
+  say: "Nếu giao dịch lỗi hoặc người dùng huỷ, màn hình nói rõ trạng thái và cho phép thử lại hoặc đổi gói thay vì để luồng bị kẹt.",
+  ms: 4200,
+  build: function () { base(); return renderPurchaseFailure(); },
+});
+step({
+  stepId: "commerce.restore",
+  screenId: "restore.processing",
   cap: "Khôi phục giao dịch",
   say: "Khi đổi máy hoặc cài lại app, restore là một luồng riêng, không phải mua lại.",
   ms: 4200,
   build: function () { base(); return renderRestore(); },
 });
 step({
+  stepId: "commerce.restore-success",
+  screenId: "restore.success",
   cap: "Khôi phục thành công",
   say: "Quyền cũ quay lại mà không làm thay đổi progress đã lưu.",
   ms: 4200,
   build: function () { base(); return renderRestoreSuccess(); },
+});
+step({
+  stepId: "commerce.restore-empty",
+  screenId: "restore.empty",
+  cap: "Khôi phục — không có giao dịch",
+  say: "Nếu không tìm thấy giao dịch cũ, người dùng vẫn có đường lui rõ ràng về các gói nội dung hoặc Home.",
+  ms: 3800,
+  build: function () { base(); return renderRestoreEmpty(); },
 });
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -997,6 +1058,10 @@ function paint() {
     console.error("[flow] " + curFlow().id + " · bước " + (si + 1) + " — " + st.cap, err);
   }
   el.screen.innerHTML = html;
+  el.screen.dataset.bvFlow = curFlow().id;
+  el.screen.dataset.bvStep = st.stepId;
+  el.screen.dataset.bvScreen = st.screenId;
+  el.screen.dataset.bvScreenKind = st.screenKind;
 
   // gợn sóng chạm — con của `.device`, KHÔNG phải của `.screen`, nên nó nằm
   // ngoài phần app.css quản và vẫn thu nhỏ đúng cùng khung máy
@@ -1154,6 +1219,9 @@ document.addEventListener("keydown", function (e) {
     var i = parseInt(k, 10) - 1;
     if (i < FLOWS.length) goFlow(i);
   }
+  else if (k === "0" && FLOWS.length >= 10) {
+    goFlow(9);
+  }
 });
 
 /* Chạm vào khung = bước tiếp; tiện khi quay bằng chuột, khỏi với tay lên bàn phím.
@@ -1208,6 +1276,8 @@ function preload() {
 }
 
 /* --- khởi động ----------------------------------------------------------- */
+
+window.BV_FLOW_SPEC = FLOWS;
 
 FLOWS.forEach(function (f, i) {
   var b = document.createElement("button");

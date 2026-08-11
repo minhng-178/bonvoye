@@ -25,12 +25,12 @@
     if (state === "loading") return C.chip("Đang tải", "warn", BV.icon("download"));
     return C.chip("Có thể khám phá", "ok");
   }
-  function page(title, subtitle, body, tab) {
+  function page(title, subtitle, body, tab, metadata) {
     var html = '<div class="bv-screen scroll"><div class="bv-screen-pad">' +
       '<div class="bv-screen-head"><div class="grow"><p class="h2">' + H.esc(title) + '</p>' +
       (subtitle ? '<p class="p bv-screen-subtitle">' + H.esc(subtitle) + '</p>' : "") + '</div></div>' + body + '</div>' +
       (tab ? BV.layout.tabbar(tab) : "") + '</div>';
-    return BV.layout.frame(html, false);
+    return BV.layout.frame(html, false, metadata);
   }
   function searchbar(value) {
     return '<div class="bv-searchbar">' + BV.icon("search") + '<input aria-label="' + H.esc(copy().searchPlaceholder) + '" placeholder="' + H.esc(copy().searchPlaceholder) + '" value="' + H.esc(value || "") + '"></div>';
@@ -58,19 +58,19 @@
       C.section(copy().recent, C.row({ title: "36 phố phường", detail: "Hà Nội · tìm lần cuối hôm qua", trailing: BV.icon("arrow"), href: "#18b-search-results" })) +
       C.section(copy().suggestions, '<div class="bv-result-list">' + root.DB.POIS.slice(0, 3).map(function (poi) { return resultRow(poi); }).join("") + '</div>') +
       '<div style="margin-top:18px">' + filterRow(0) + '</div></div>';
-    return page(copy().title, copy().subtitle, body, "map");
+    return page(copy().title, copy().subtitle, body, "map", { screenId: "search.initial", route: "18-search", scroll: true });
   }
   function renderResults() {
     var pois = root.DB.POIS.slice(0, 4);
     var body = searchbar("phố cổ") + filterRow(0) +
       '<div class="bv-result-group"><span class="eyebrow">' + H.esc(copy().results) + '</span><div class="bv-result-list">' +
       pois.map(function (poi, index) { return resultRow(poi, index === 0 ? "Hà Nội · 15 phút đi bộ" : undefined); }).join("") + '</div></div>';
-    return page(copy().title, "4 kết quả trong Hà Nội", body, "map");
+    return page(copy().title, "4 kết quả trong Hà Nội", body, "map", { screenId: "search.results", route: "18b-search-results", scroll: true });
   }
   function renderEmpty() {
     var body = searchbar("vườn ký ức") + filterRow(0) + C.empty({ icon: "🔎", title: copy().emptyTitle, detail: copy().emptyDetail }) +
       '<div class="bv-inline-actions"><a class="btn" href="#18-search">Xoá tìm kiếm</a><a class="btn primary" href="#01-home">Về Home</a></div>';
-    return page(copy().title, "Không có kết quả cho “vườn ký ức”", body, "map");
+    return page(copy().title, "Không có kết quả cho “vườn ký ức”", body, "map", { screenId: "search.empty", route: "18c-search-empty", scroll: true });
   }
   function detailAction(poi, variant) {
     if (variant === "locked") return C.button({ label: "Mở khóa nội dung", variant: "primary", href: "#20-offers", icon: BV.icon("lock") });
@@ -100,7 +100,7 @@
       '<div style="margin-top:18px">' + detailState + '</div>' +
       C.section("Người kể chuyện", '<div class="bv-result-list">' + storyRows + '</div>') +
       '<div class="bv-inline-actions" style="margin-top:16px">' + detailAction(poi, state) + '<a class="btn" href="#18-search">Quay lại</a></div>';
-    return page(poi.name, "Chi tiết điểm dừng", body, "map");
+    return page(poi.name, "Chi tiết điểm dừng", body, "map", { screenId: "poi-detail." + state, route: state === "locked" ? "19b-poi-detail-locked" : state === "offline" ? "19c-poi-detail-offline" : "19-poi-detail", scroll: true });
   }
 
   screens.search = renderSearch;

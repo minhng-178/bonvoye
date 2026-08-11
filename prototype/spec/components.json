@@ -1,0 +1,123 @@
+{
+  "schemaVersion": "1.0.0",
+  "source": "src/ui/components.js",
+  "contract": {
+    "metadata": ["componentId", "variant", "state", "testId", "semanticsLabel", "actionId"],
+    "rule": "Visual output must remain unchanged when metadata is omitted.",
+    "flutterCallback": "Widget callback -> action dispatcher -> state transition -> render"
+  },
+  "components": [
+    {
+      "id": "button",
+      "flutterWidget": "FilledButton/OutlinedButton/TextButton",
+      "required": ["label"],
+      "optional": ["icon", "variant", "size", "disabled", "semanticsLabel", "actionId", "actionPayload"],
+      "variants": ["default", "primary", "dark", "ghost", "danger"],
+      "states": ["enabled", "disabled", "loading"],
+      "minTouchTarget": 44,
+      "callback": "onPressed",
+      "semantics": "Use semanticsLabel when the visible label is not sufficient."
+    },
+    {
+      "id": "icon-button",
+      "flutterWidget": "IconButton",
+      "required": ["ariaLabel", "icon"],
+      "optional": ["disabled", "actionId", "actionPayload"],
+      "variants": ["default", "dark", "ghost"],
+      "states": ["enabled", "disabled"],
+      "minTouchTarget": 44,
+      "callback": "onPressed"
+    },
+    {
+      "id": "chip",
+      "flutterWidget": "Chip/FilterChip",
+      "required": ["label"],
+      "optional": ["tone", "icon", "selected", "onTap"],
+      "variants": ["default", "on", "ok", "warn", "gated"],
+      "states": ["idle", "selected", "disabled"],
+      "callback": "onSelected/onPressed"
+    },
+    {
+      "id": "card",
+      "flutterWidget": "Card",
+      "required": ["body"],
+      "optional": ["className", "onTap"],
+      "variants": ["default", "option", "recommended", "dark"],
+      "states": ["idle", "selected", "disabled"],
+      "callback": "onTap"
+    },
+    {
+      "id": "row",
+      "flutterWidget": "ListTile",
+      "required": ["title"],
+      "optional": ["detail", "meta", "leading", "trailing", "selected", "disabled", "actionId", "actionPayload"],
+      "variants": ["default", "selected", "story", "result"],
+      "states": ["idle", "selected", "disabled", "loading"],
+      "callback": "onTap"
+    },
+    {
+      "id": "section",
+      "flutterWidget": "Column with section label",
+      "required": ["body"],
+      "optional": ["label", "className"],
+      "variants": ["default"],
+      "states": ["visible", "empty"]
+    },
+    {
+      "id": "progress",
+      "flutterWidget": "LinearProgressIndicator",
+      "required": ["value"],
+      "optional": ["tone"],
+      "variants": ["default", "success", "warning"],
+      "states": ["progressing", "complete", "paused"]
+    },
+    {
+      "id": "field",
+      "flutterWidget": "TextFormField",
+      "required": ["label"],
+      "optional": ["type", "placeholder", "value", "errorText", "actionId"],
+      "variants": ["default", "search", "phone"],
+      "states": ["empty", "filled", "focused", "error", "disabled"],
+      "callback": "onChanged/onFieldSubmitted"
+    },
+    {
+      "id": "price",
+      "flutterWidget": "Column with amount and caption",
+      "required": ["amount"],
+      "optional": ["caption"],
+      "variants": ["default", "emphasis"]
+    },
+    {
+      "id": "empty",
+      "flutterWidget": "EmptyState widget",
+      "required": ["title"],
+      "optional": ["icon", "detail", "actionId"],
+      "variants": ["default", "search", "offline", "restore"]
+    },
+    {
+      "id": "sheet",
+      "flutterWidget": "showModalBottomSheet/DraggableScrollableSheet",
+      "required": ["body"],
+      "optional": ["header", "footer", "tall", "dark", "dismissible", "actionId"],
+      "variants": ["default", "tall", "dark"],
+      "states": ["open", "closing", "blocked"]
+    },
+    {
+      "id": "banner",
+      "flutterWidget": "MaterialBanner/SnackBar equivalent",
+      "required": ["title"],
+      "optional": ["detail", "tone", "durationMs", "actionId"],
+      "variants": ["default", "success", "warning", "danger", "info"],
+      "states": ["visible", "dismissed"]
+    },
+    {
+      "id": "map-surface",
+      "flutterWidget": "MapSurface (Stack of map, artwork, zones, route, markers, HUD)",
+      "required": ["site", "center", "zoom"],
+      "optional": ["me", "accuracy", "inRangePois", "showZones", "route", "showMe", "dimUndownloaded", "artwork"],
+      "variants": ["realMap", "artwork", "hybrid", "offline"],
+      "states": ["outsideSite", "insideSite", "fakeGps", "offlineFocus"],
+      "callback": "onMapTap/onMarkerTap/onDragPosition"
+    }
+  ]
+}

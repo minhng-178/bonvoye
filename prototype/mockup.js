@@ -43,21 +43,25 @@ function mPerPx(lat, z) {
 }
 
 /** Điểm GPS → toạ độ pixel trong bề mặt bản đồ, với `center` ở giữa bề mặt. */
-function toScreen(pt, center, z) {
+function toScreen(pt, center, z, viewport) {
+  var width = viewport && viewport.width || W;
+  var height = viewport && viewport.height || MH;
   var c = worldPx(center.lat, center.lng, z);
   var p = worldPx(pt.lat, pt.lng, z);
-  return { x: p.x - c.x + W / 2, y: p.y - c.y + MH / 2 };
+  return { x: p.x - c.x + width / 2, y: p.y - c.y + height / 2 };
 }
 
 /* ── 2 · Bề mặt bản đồ tĩnh ───────────────────────────────────────────────── */
 
 /** Lưới tile phủ đủ khung. Mỗi tile là một <img> đặt tuyệt đối — không cần
  *  ghép ảnh, không cần thư viện bản đồ. */
-function tileLayer(center, z) {
+function tileLayer(center, z, viewport) {
+  var width = viewport && viewport.width || W;
+  var height = viewport && viewport.height || MH;
   var c = worldPx(center.lat, center.lng, z);
-  var left = c.x - W / 2, top = c.y - MH / 2;
-  var x0 = Math.floor(left / 256), x1 = Math.floor((left + W) / 256);
-  var y0 = Math.floor(top / 256), y1 = Math.floor((top + MH) / 256);
+  var left = c.x - width / 2, top = c.y - height / 2;
+  var x0 = Math.floor(left / 256), x1 = Math.floor((left + width) / 256);
+  var y0 = Math.floor(top / 256), y1 = Math.floor((top + height) / 256);
   var max = Math.pow(2, z);
   var s = '<div class="mm-tiles warm">';
   for (var tx = x0; tx <= x1; tx++) {
@@ -83,19 +87,26 @@ function tileLayer(center, z) {
  *   dimUndownloaded: bool          Focus Mode khi mất mạng
  *   limitM        : số             vòng trần kéo (chế độ kéo)
  *   labels        : bool           nhãn phố/POI
+ *   viewport      : {width,height} bề mặt compact (mặc định W × MH)
+ *   route         : POI[]         tuyến gợi ý theo thứ tự
+ *   showMe        : bool           hiện vị trí người dùng (mặc định true)
  * }
  */
 function mapSurface(cfg) {
   var site = cfg.site;
   var center = cfg.center || site.center;
   var z = cfg.zoom || 17;
+  var viewport = cfg.viewport || { width: W, height: MH };
+  var width = viewport.width || W;
+  var height = viewport.height || MH;
   var me = cfg.me || center;
   var mpp = mPerPx(center.lat, z);
   var inRange = cfg.inRangePois || [];
   var pois = DB.poisOfSite(site.id);
+  var screenPoint = function (pt) { return toScreen(pt, center, z, viewport); };
 
   var s = '<div class="mm">';
-  s += tileLayer(center, z);
+  s += tileLayer(center, z, viewport);
 
   // Lớp tranh giúp flow vẫn có chiều sâu khi tile OSM chưa tải hoặc đang offline.
   // Marker và vùng tương tác vẫn nằm trên lớp này, dùng toạ độ GPS thật.
@@ -109,9 +120,28 @@ function mapSurface(cfg) {
   // geofence cấp KHU
   if (site.geofence.mode === "polygon") {
     var pts = site.geofence.polygon
-      .map(function (p) { var q = toScreen(p, center, z); return q.x.toFixed(0) + "," + q.y.toFixed(0); })
+      .map(function (p) { var q = screenPoint(p); return q.x.toFixed(0) + "," + q.y.toFixed(0); })
       .join(" ");
-    s += '<svg class="mm-geofence" viewBox="0 0 ' + W + " " + MH + '"><polygon points="' + pts + '"/></svg>';
+    s += '<svg class="mm-geofence" viewBox="0 0 ' + width + " " + height + '"><polygon points="' + pts + '"/></svg>';
+  }
+
+  // Tuyến gợi ý — chỉ là lớp xem nhanh, không giả vờ là chỉ đường turn-by-turn.
+  if (cfg.route && cfg.route.length > 1) {
+    var routePoints = cfg.route.map(function (poi, i) {
+      var c = screenPoint(poi.location || poi);
+      return { x: c.x, y: c.y, label: poi.routeNumber || (i + 1) };
+    });
+    var routeCoords = routePoints.map(function (p) {
+      return p.x.toFixed(1) + ',' + p.y.toFixed(1);
+    }).join(' ');
+    s += '<svg class="mm-route" viewBox="0 0 ' + width + ' ' + height + '" aria-hidden="true">' +
+      '<polyline class="mm-route-under" points="' + routeCoords + '"/>' +
+      '<polyline class="mm-route-line" points="' + routeCoords + '"/>' +
+      '</svg>';
+    routePoints.forEach(function (p) {
+      s += '<span class="mm-route-stop" style="left:' + p.x.toFixed(1) + 'px;top:' +
+        p.y.toFixed(1) + 'px">' + p.label + '</span>';
+    });
   }
 
   // vùng tương tác — bán kính MÉT THẬT chia cho mét/pixel ⇒ tròn đúng tỉ lệ
@@ -119,7 +149,7 @@ function mapSurface(cfg) {
     pois.forEach(function (poi) {
       var it = poi.interaction;
       if (it.mode === "polygon") return;
-      var c = toScreen(poi.location, center, z);
+      var c = screenPoint(poi.location);
       var rEnter = it.enter_radius_m / mpp;
       s += '<div class="zone enter" style="left:' + c.x.toFixed(1) + "px;top:" + c.y.toFixed(1) +
         "px;width:" + (rEnter * 2).toFixed(1) + "px;height:" + (rEnter * 2).toFixed(1) + 'px"></div>';
@@ -133,7 +163,7 @@ function mapSurface(cfg) {
 
   // trần kéo Fake GPS (PHẦN 4) — cũng là mét thật
   if (cfg.limitM) {
-    var lc = toScreen(cfg.limitAnchor || me, center, z);
+    var lc = screenPoint(cfg.limitAnchor || me);
     var lr = cfg.limitM / mpp;
     s += '<div class="zone limit" style="left:' + lc.x.toFixed(1) + "px;top:" + lc.y.toFixed(1) +
       "px;width:" + (lr * 2).toFixed(1) + "px;height:" + (lr * 2).toFixed(1) + 'px"></div>';
@@ -144,8 +174,8 @@ function mapSurface(cfg) {
   // có GPS, nên cũng không dùng lại được ở đây.)
   if (cfg.labels) {
     pois.forEach(function (poi) {
-      var c = toScreen(poi.location, center, z);
-      if (c.x < 30 || c.x > W - 30 || c.y < 70 || c.y > MH - 40) return;
+      var c = screenPoint(poi.location);
+      if (c.x < 30 || c.x > width - 30 || c.y < 45 || c.y > height - 28) return;
       // a-top ⇒ nhãn nằm TRÊN điểm neo, tránh đè lên pin (pin cao 30px)
       s += '<div class="lbl kind-poi a-top" style="left:' + c.x.toFixed(1) +
         "px;top:" + (c.y - 34).toFixed(1) + 'px">' + poi.name + "</div>";
@@ -154,8 +184,8 @@ function mapSurface(cfg) {
 
   // pin POI
   pois.forEach(function (poi) {
-    var c = toScreen(poi.location, center, z);
-    if (c.x < -60 || c.x > W + 60 || c.y < -40 || c.y > MH + 40) return;
+    var c = screenPoint(poi.location);
+    if (c.x < -60 || c.x > width + 60 || c.y < -40 || c.y > height + 40) return;
     var d = E.dl(poi.id);
     var cls = "mk mk-poi";
     if (d.status === "ready") cls += " st-ready";
@@ -171,7 +201,7 @@ function mapSurface(cfg) {
   pois.forEach(function (poi) {
     if (inRange.indexOf(poi.id) < 0) return;
     DB.npcsOfPoi(poi.id).forEach(function (npc, i) {
-      var c = toScreen(npc.location, center, z);
+      var c = screenPoint(npc.location);
       // Xếp NPC sang PHẢI của pin. Toạ độ GPS của các NPC cùng một POI gần như
       // trùng nhau, nên nếu vẽ đúng chỗ thì chúng đè cả lên nhau lẫn lên pin.
       var off = 26 + i * 34;
@@ -186,11 +216,13 @@ function mapSurface(cfg) {
   });
 
   // vị trí người dùng + vòng sai số
-  var mc = toScreen(me, center, z);
-  var accPx = ((cfg.accuracy || 12) / mpp) * 2;
-  s += '<div class="me' + (cfg.faked ? " faked" : "") + '" style="left:' + mc.x.toFixed(1) +
-    "px;top:" + mc.y.toFixed(1) + 'px"><div class="acc" style="width:' + accPx.toFixed(1) +
-    "px;height:" + accPx.toFixed(1) + 'px"></div><div class="dot"></div></div>';
+  if (cfg.showMe !== false) {
+    var mc = screenPoint(me);
+    var accPx = ((cfg.accuracy || 12) / mpp) * 2;
+    s += '<div class="me' + (cfg.faked ? " faked" : "") + '" style="left:' + mc.x.toFixed(1) +
+      "px;top:" + mc.y.toFixed(1) + 'px"><div class="acc" style="width:' + accPx.toFixed(1) +
+      "px;height:" + accPx.toFixed(1) + 'px"></div><div class="dot"></div></div>';
+  }
 
   s += '<div class="mm-attr">© OpenStreetMap</div>';
   return s + "</div>";
@@ -281,7 +313,13 @@ function poisOf(id) { return DB.poisOfSite(id); }
 /* ── 5 · Danh sách cảnh ───────────────────────────────────────────────────── */
 
 var SCENES = [];
-function scene(o) { SCENES.push(o); }
+function scene(o) {
+  o = o || {};
+  o.screenId = o.screenId || "mockup." + String(o.num || "scene") + "." + SCENES.length;
+  o.kind = o.kind || "staticFixture";
+  o.screenshotId = o.screenshotId || "mockup-" + o.screenId.replace(/[^a-z0-9.-]/gi, "-");
+  SCENES.push(o);
+}
 
 var CUAO = "s-cuao";
 var VANMIEU = "s-vanmieu";
@@ -766,10 +804,12 @@ function buildAll(filter) {
     }
     var cell = document.createElement("div");
     cell.className = "gal-cell";
+    cell.dataset.bvScreen = sc.screenId;
+    cell.dataset.bvKind = sc.kind;
     cell.innerHTML =
       '<div class="gal-frame"><div class="device"><div class="island"></div>' +
-      '<div class="screen">' + html + "</div></div></div>" +
-      '<div class="gal-cap"><span class="num">' + sc.num + "</span><b>" + sc.title + "</b>" +
+      '<div class="screen" data-bv-screen="' + sc.screenId + '" data-bv-route="' + (sc.route || "") + '" data-bv-screen-kind="' + sc.kind + '" data-bv-screenshot="' + sc.screenshotId + '">' + html + "</div></div></div>" +
+      '<div class="gal-cap" data-bv-caption-for="' + sc.screenId + '"><span class="num">' + sc.num + "</span><b>" + sc.title + "</b>" +
       "<p>" + sc.note + "</p></div>";
     grid.appendChild(cell);
   });
@@ -808,6 +848,7 @@ window.MU = {
   worldPx: worldPx,
   site: site,
   poisOf: poisOf,
+  scenes: SCENES,
   W: W, H: H, MH: MH, CLOCK_MS: CLOCK_MS,
 };
 

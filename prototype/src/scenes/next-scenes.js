@@ -7,8 +7,39 @@
       root.S.topicId = "t-phoco";
       root.S.selectedPoiId = "p-oquanchuong";
     }
-    function scene(num, group, title, note, build) {
-      add({ num: num, group: group, title: title, note: note, build: build });
+    var screenIds = {
+      "18": "search.initial",
+      "18b": "search.results",
+      "18c": "search.empty",
+      "19": "poi-detail.available",
+      "19b": "poi-detail.locked",
+      "19c": "poi-detail.offline",
+      "20": "offers.initial",
+      "20b": "purchase.processing",
+      "20c": "purchase.success",
+      "20d": "purchase.failure",
+      "21": "restore.processing",
+      "21b": "restore.success",
+      "21c": "restore.empty",
+      "22": "planner.select",
+      "22b": "planner.duration",
+      "23": "planner.generated",
+      "23b": "planner.edit",
+      "23c": "planner.saved",
+    };
+    function scene(num, group, title, note, build, metadata) {
+      metadata = metadata || {};
+      add({
+        num: num,
+        group: group,
+        title: title,
+        note: note,
+        build: build,
+        screenId: metadata.screenId || screenIds[num] || "scene." + num,
+        route: metadata.route || null,
+        kind: metadata.kind || "staticFixture",
+        screenshotId: metadata.screenshotId || "mockup-" + num,
+      });
     }
 
     scene("18", "Khám phá", "Tìm kiếm — trạng thái ban đầu", "Tìm kiếm, lịch sử gần đây, bộ lọc và gợi ý điểm đến.", function () {

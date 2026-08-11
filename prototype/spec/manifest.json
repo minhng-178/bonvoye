@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0.0",
+  "product": "BonVoye",
+  "purpose": "Flutter widget and state handoff",
+  "referenceViewport": { "width": 393, "height": 852 },
+  "files": {
+    "tokens": "design-tokens.json",
+    "components": "components.json",
+    "screens": "screens.json",
+    "actions": "actions.json",
+    "flows": "flows.json",
+    "map": "map-contract.json",
+    "stateMachines": "state-machines.json"
+  },
+  "runtimeSources": ["../data.js", "../engine.js", "../mockup.js", "../flow.js"],
+  "visualReferences": ["../mockup.html#solo=<n>", "../flow.html#f=<flowId>&s=<step>"]
+}

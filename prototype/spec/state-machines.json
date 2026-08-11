@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "1.0.0",
+  "source": ["data.js", "engine.js"],
+  "domainModel": {
+    "hierarchy": ["country", "city", "topic", "site", "poi", "npc", "story", "hiddenThread"],
+    "entitlement": ["free", "free_first_choice", "purchased", "locked"],
+    "interactionMode": ["radius", "polygon"]
+  },
+  "machines": {
+    "proximity": {
+      "models": ["npc20", "poi2535"],
+      "poi2535States": ["far", "entering", "near_confirmed"],
+      "observable": ["inRangePoiIds", "inRangeNpcIds", "nearbyPoiId", "insideSite"],
+      "rules": ["enter radius is inclusive", "exit radius is larger than enter radius", "dwell must be continuous"]
+    },
+    "fakeGps": {
+      "states": ["inactive", "active", "reset_pending", "reset_deferred", "reset"],
+      "resetTriggers": ["expiry", "realGpsArrived", "leftPoiContext", "goodGpsStable"],
+      "observable": ["dragMode", "fakeGps", "fakeGpsStartedAt", "resetPending", "resetReason"],
+      "rules": ["fake location wins while active", "audio playback defers reset", "reset emits a non-blocking banner"]
+    },
+    "download": {
+      "states": ["not_downloaded", "downloading", "paused", "verifying", "ready"],
+      "observable": ["status", "downloadedMB", "totalMB", "progress"],
+      "rules": ["resume retains downloadedMB", "ready requires verification", "offline focus dims non-ready POIs"]
+    },
+    "storyProgress": {
+      "states": ["not_started", "in_progress", "completed"],
+      "observable": ["storyState", "currentBlock", "audioPlaying", "audioPosition", "screenOff"],
+      "rules": ["completion is persisted by story ID and content version does not reset completion"]
+    }
+  },
+  "fixtureGuidance": {
+    "reset": "Use the existing MU.reset()/engine reset path before each deterministic fixture.",
+    "staticMockup": "A static scene may seed observable state directly; it must be labeled staticFixture.",
+    "flutterPort": "Expose immutable snapshots and action results; do not port direct global S mutation into Widgets."
+  }
+}
