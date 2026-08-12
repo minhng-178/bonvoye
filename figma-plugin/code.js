@@ -1,611 +1,496 @@
 "use strict";
+// BonVoye Figma Plugin — All Mockup Screens
+// Reads mockup-screens.json from UI, renders 50 phone frames in Figma.
 
-const IMPORTER_VERSION = "1.0.0";
-const FILE_CACHE_KEY = "bonvoye.importer.fileCache.v1";
-const FONT_CACHE = new Map();
-const FALLBACK_CONFIG = {
-  pageNames: {
-    tokens: "BonVoye • Tokens",
-    components: "BonVoye • Components",
-    screens: "BonVoye • Screens",
-  },
-  viewport: {
-    outerWidth: 393,
-    outerHeight: 852,
-    screenWidth: 371,
-    screenHeight: 830,
-    statusBarHeight: 50,
-    homeIndicatorWidth: 134,
-    homeIndicatorHeight: 5,
-    homeIndicatorBottom: 7,
-    screenInset: 11,
-  },
-  screenGrid: { columns: 4, columnGap: 56, rowGap: 72, labelHeight: 118 },
-};
+figma.showUI(__html__, { width: 380, height: 540, themeColors: true });
 
-figma.showUI(__html__, { width: 440, height: 760, themeColors: true });
-
-async function loadFileCache() {
-  const cache = await figma.clientStorage.getAsync(FILE_CACHE_KEY);
-  figma.ui.postMessage({ type: "file-cache", cache: cache || { contracts: {}, visuals: {} } });
+// ── Color helpers ─────────────────────────────────────────────────────────────
+function hexRgb(h) {
+  const v = h.replace("#", "");
+  return { r: parseInt(v.slice(0,2),16)/255, g: parseInt(v.slice(2,4),16)/255, b: parseInt(v.slice(4,6),16)/255 };
+}
+function solid(h, a) {
+  const c = hexRgb(h);
+  return [{ type: "SOLID", color: c, opacity: a ?? 1 }];
 }
 
-async function saveFileCache(cache) {
-  await figma.clientStorage.setAsync(FILE_CACHE_KEY, cache || { contracts: {}, visuals: {} });
+// ── Font loading ──────────────────────────────────────────────────────────────
+async function loadFonts() {
+  await Promise.all([
+    figma.loadFontAsync({ family: "Inter", style: "Regular" }),
+    figma.loadFontAsync({ family: "Inter", style: "Semi Bold" }),
+    figma.loadFontAsync({ family: "Inter", style: "Bold" }),
+  ]);
 }
 
-loadFileCache().catch((error) => {
-  figma.ui.postMessage({ type: "file-cache-error", message: String(error && error.message || error) });
-});
+// ── Phone device frame builder ────────────────────────────────────────────────
+function makePhoneFrame(name, screenPngBytes) {
+  // Outer device 393×852
+  const device = figma.createFrame();
+  device.name = name;
+  device.resize(393, 852);
+  device.cornerRadius = 52;
+  device.clipsContent = true;
+  device.fills = solid("#0b0d0f");
+  device.strokes = [{ type: "SOLID", color: hexRgb("#2a3039"), opacity: 1 }];
+  device.strokeWeight = 1.5;
+  device.strokeAlign = "OUTSIDE";
+  device.effects = [{
+    type: "DROP_SHADOW",
+    color: { r: 0, g: 0, b: 0, a: 0.65 },
+    offset: { x: 0, y: 24 },
+    radius: 50,
+    spread: -12,
+    visible: true,
+    blendMode: "NORMAL",
+  }];
 
-function notify(message) {
-  figma.notify(message);
-  figma.ui.postMessage({ type: "progress", message });
+  // Inner screen 371×830
+  const screen = figma.createFrame();
+  screen.name = "Screen";
+  screen.resize(371, 830);
+  screen.x = 11;
+  screen.y = 11;
+  screen.cornerRadius = 42;
+  screen.clipsContent = true;
+
+  // Set image fill from PNG bytes
+  const imageHash = figma.createImage(screenPngBytes).hash;
+  screen.fills = [{
+    type: "IMAGE",
+    imageHash: imageHash,
+    scaleMode: "FILL",
+  }];
+
+  // Dynamic Island
+  const island = figma.createRectangle();
+  island.name = "Dynamic Island";
+  island.resize(118, 33);
+  island.x = (371 - 118) / 2;
+  island.y = 9;
+  island.cornerRadius = 16;
+  island.fills = solid("#0b0d0f");
+  screen.appendChild(island);
+
+  device.appendChild(screen);
+  return device;
 }
 
-function color(hex, opacity) {
-  const value = String(hex || "#000000").trim();
-  const match = /^#([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(value);
-  if (!match) return { r: 0, g: 0, b: 0, a: opacity == null ? 1 : opacity };
-  const raw = match[1].length === 3 ? match[1].split("").map((x) => x + x).join("") : match[1];
-  return {
-    r: parseInt(raw.slice(0, 2), 16) / 255,
-    g: parseInt(raw.slice(2, 4), 16) / 255,
-    b: parseInt(raw.slice(4, 6), 16) / 255,
-    a: opacity == null ? 1 : opacity,
-  };
+// ── Group label ───────────────────────────────────────────────────────────────
+function makeGroupLabel(groupName) {
+  const label = figma.createText();
+  label.name = "Group: " + groupName;
+  label.characters = groupName.toUpperCase();
+  label.fontSize = 11;
+  label.fontName = { family: "Inter", style: "Bold" };
+  label.fills = solid("#8899aa");
+  label.letterSpacing = { value: 12, unit: "PERCENT" };
+  return label;
 }
 
-function paint(hex, opacity) {
-  const rgba = color(hex, opacity);
-  return { type: "SOLID", color: { r: rgba.r, g: rgba.g, b: rgba.b }, opacity: rgba.a };
-}
+// ── Screen caption ────────────────────────────────────────────────────────────
+function makeCaption(num, title, note) {
+  const wrap = figma.createFrame();
+  wrap.name = "Caption";
+  wrap.resize(393, 80);
+  wrap.fills = [];
+  wrap.layoutMode = "VERTICAL";
+  wrap.itemSpacing = 4;
+  wrap.paddingTop = 0;
+  wrap.primaryAxisSizingMode = "AUTO";
+  wrap.counterAxisSizingMode = "FIXED";
 
-function setFill(node, hex, opacity) {
-  node.fills = [paint(hex, opacity)];
-}
+  const numBadge = figma.createText();
+  numBadge.characters = num;
+  numBadge.fontSize = 10;
+  numBadge.fontName = { family: "Inter", style: "Bold" };
+  numBadge.fills = solid("#b4472b");
+  wrap.appendChild(numBadge);
 
-function setStroke(node, hex, opacity, weight) {
-  node.strokes = [paint(hex, opacity)];
-  node.strokeWeight = weight == null ? 1 : weight;
-}
+  const titleT = figma.createText();
+  titleT.characters = title;
+  titleT.fontSize = 12;
+  titleT.fontName = { family: "Inter", style: "Semi Bold" };
+  titleT.fills = solid("#1a2430");
+  titleT.resize(393, 20);
+  wrap.appendChild(titleT);
 
-function setMeta(node, meta) {
-  node.setPluginData("bv.meta", JSON.stringify(meta || {}));
-  Object.keys(meta || {}).forEach((key) => {
-    const value = meta[key];
-    if (value == null) return;
-    node.setPluginData("bv." + key, typeof value === "string" ? value : JSON.stringify(value));
-  });
-  node.setPluginData("bv.generated", "true");
-  node.setPluginData("bv.importerVersion", IMPORTER_VERSION);
-}
-
-function pageByName(name) {
-  return figma.root.children.find((node) => node.type === "PAGE" && node.name === name) || null;
-}
-
-function getPage(name) {
-  const existing = pageByName(name);
-  if (existing) return existing;
-
-  const reusable = figma.root.children.find((node) =>
-    node.type === "PAGE" &&
-    node.children.length === 0 &&
-    !/^BonVoye • /.test(node.name)
-  );
-  if (reusable) {
-    reusable.name = name;
-    return reusable;
+  if (note) {
+    const noteT = figma.createText();
+    noteT.characters = note.slice(0, 120);
+    noteT.fontSize = 10;
+    noteT.fontName = { family: "Inter", style: "Regular" };
+    noteT.fills = solid("#6b7d8d");
+    noteT.textAutoResize = "HEIGHT";
+    noteT.resize(393, 30);
+    wrap.appendChild(noteT);
   }
 
-  const pageCount = figma.root.children.filter((node) => node.type === "PAGE").length;
-  if (pageCount >= 3) {
-    throw new Error("This Figma file already has three pages. Reuse or remove a blank page before importing BonVoye.");
+  return wrap;
+}
+
+// ── Main render function ──────────────────────────────────────────────────────
+async function drawAllScreens(screens) {
+  await loadFonts();
+
+  const PHONE_W = 393;
+  const PHONE_H = 852;
+  const COL_GAP = 60;   // khoảng cách ngang giữa các phone
+  const ROW_GAP = 120;  // khoảng cách dọc giữa các hàng
+  const COLS = 6;       // số cột mỗi hàng
+  const CAPTION_H = 90; // chiều cao caption dưới phone
+  const GROUP_LABEL_H = 40; // chiều cao label nhóm
+
+  const STEP_X = PHONE_W + COL_GAP;
+  const STEP_Y = PHONE_H + CAPTION_H + ROW_GAP;
+
+  // Tạo / tìm page
+  let page = figma.root.children.find(p => p.name === "BonVoye Mockups");
+  if (!page) {
+    page = figma.createPage();
+    page.name = "BonVoye Mockups";
   }
+  figma.currentPage = page;
 
-  const page = figma.createPage();
-  page.name = name;
-  return page;
-}
-
-function clearGenerated(page) {
-  page.children.slice().forEach((node) => {
-    if (node.getPluginData("bv.generated") === "true") node.remove();
-  });
-}
-
-function textStyle(size, colorValue, weight, family) {
-  return {
-    size: Number(size) || 13,
-    color: colorValue || "#241c16",
-    weight: Number(weight) || 400,
-    family: family || "Inter",
-  };
-}
-
-function styleName(weight) {
-  if (weight >= 800) return "Extra Bold";
-  if (weight >= 700) return "Bold";
-  if (weight >= 600) return "Semi Bold";
-  if (weight >= 500) return "Medium";
-  return "Regular";
-}
-
-async function resolveFont(requestedFamily, requestedWeight) {
-  const family = String(requestedFamily || "Inter");
-  const cacheKey = family + "::" + (Number(requestedWeight) || 400);
-  if (FONT_CACHE.has(cacheKey)) return FONT_CACHE.get(cacheKey);
-  const families = family === "system" || family === "ui-monospace"
-    ? [family === "ui-monospace" ? "Roboto Mono" : "Inter", "Arial"]
-    : [family, "Inter", "Arial"];
-  const styles = [styleName(Number(requestedWeight) || 400), "Regular"];
-  for (const candidateFamily of families) {
-    for (const candidateStyle of styles) {
-      try {
-        await figma.loadFontAsync({ family: candidateFamily, style: candidateStyle });
-        const resolved = { family: candidateFamily, style: candidateStyle };
-        FONT_CACHE.set(cacheKey, resolved);
-        return resolved;
-      } catch (_) {
-        // Try the next known fallback.
-      }
+  // Group screens by group name
+  const groups = [];
+  const groupMap = new Map();
+  screens.forEach(sc => {
+    const g = sc.group || "Khác";
+    if (!groupMap.has(g)) {
+      groupMap.set(g, []);
+      groups.push(g);
     }
-  }
-  throw new Error("No usable font is available in this Figma environment");
-}
+    groupMap.get(g).push(sc);
+  });
 
-async function addText(parent, value, x, y, width, style, meta) {
-  const node = figma.createText();
-  parent.appendChild(node);
-  const font = await resolveFont(style.family, style.weight);
-  node.fontName = font;
-  node.fontSize = style.size;
-  node.characters = String(value == null ? "" : value);
-  node.fills = [paint(style.color)];
-  node.x = x;
-  node.y = y;
-  node.textAutoResize = "HEIGHT";
-  if (width) node.resize(width, Math.max(node.height, style.size * 1.25));
-  if (style.letterSpacing != null) node.letterSpacing = { unit: "PIXELS", value: Number(style.letterSpacing) };
-  if (style.lineHeight != null) node.lineHeight = { unit: "PIXELS", value: Number(style.lineHeight) };
-  if (meta) setMeta(node, meta);
-  return node;
-}
+  let currentY = 0;
+  const allNodes = [];
 
-function addRect(parent, x, y, width, height, fill, radius, meta) {
-  const node = figma.createRectangle();
-  parent.appendChild(node);
-  node.x = x;
-  node.y = y;
-  node.resize(Math.max(1, width), Math.max(1, height));
-  if (fill) setFill(node, fill);
-  if (radius != null) node.cornerRadius = Number(radius);
-  if (meta) setMeta(node, meta);
-  return node;
-}
+  for (const groupName of groups) {
+    const groupScreens = groupMap.get(groupName);
 
-function addFrame(parent, x, y, width, height, fill, radius, meta) {
-  const node = figma.createFrame();
-  parent.appendChild(node);
-  node.x = x;
-  node.y = y;
-  node.resize(Math.max(1, width), Math.max(1, height));
-  node.clipsContent = false;
-  if (fill) setFill(node, fill);
-  if (radius != null) node.cornerRadius = Number(radius);
-  if (meta) setMeta(node, meta);
-  return node;
-}
+    // Group label
+    const label = makeGroupLabel(groupName);
+    label.x = 0;
+    label.y = currentY;
+    page.appendChild(label);
+    allNodes.push(label);
+    currentY += GROUP_LABEL_H;
 
-function tokenValue(tokens, path) {
-  return path.split(".").reduce((value, key) => value && value[key], tokens);
-}
+    // Place screens in rows of COLS
+    for (let i = 0; i < groupScreens.length; i++) {
+      const sc = groupScreens[i];
+      const col = i % COLS;
+      const row = Math.floor(i / COLS);
+      const x = col * STEP_X;
+      const y = currentY + row * STEP_Y;
 
-function firstColor(tokens) {
-  return tokens.colors && (tokens.colors["surface.canvas"] || Object.values(tokens.colors)[0]) || "#faf5ea";
-}
-
-function tokenTypography(tokens, name) {
-  const spec = (tokens.typography && tokens.typography[name]) || {};
-  return textStyle(spec.size, tokens.colors?.["text.primary"] || "#241c16", spec.weight, spec.family === "system" ? "Inter" : spec.family);
-}
-
-async function createTokensPage(page, tokens, config) {
-  let y = 40;
-  const colors = tokens.colors || {};
-  const typography = tokens.typography || {};
-  const spacing = tokens.spacing || {};
-  const radii = tokens.radii || {};
-  const sections = [
-    { title: "Colors", values: colors, kind: "color" },
-    { title: "Typography", values: typography, kind: "typography" },
-    { title: "Spacing", values: spacing, kind: "number" },
-    { title: "Radii", values: radii, kind: "number" },
-    { title: "Elevation", values: tokens.elevation || {}, kind: "string" },
-    { title: "Layers", values: tokens.layers || {}, kind: "number" },
-    { title: "Motion", values: tokens.motion || {}, kind: "number" },
-  ];
-  await addText(page, "BonVoye — Design Tokens", 40, y, 560, textStyle(28, colors["text.primary"] || "#241c16", 700, "Georgia"), { sourceKind: "token-page" });
-  y += 56;
-  await addText(page, "Imported from prototype/spec/design-tokens.json", 40, y, 560, textStyle(13, colors["text.muted"] || "#7c7168", 400, "Inter"));
-  y += 42;
-
-  for (const section of sections) {
-    await addText(page, section.title, 40, y, 560, textStyle(18, colors["text.primary"] || "#241c16", 700, "Georgia"), { sourceKind: "token-section", tokenSection: section.title });
-    y += 34;
-    let x = 40;
-    let rowHeight = section.kind === "typography" ? 62 : 48;
-    for (const key of Object.keys(section.values)) {
-      const value = section.values[key];
-      const card = addFrame(page, x, y, 270, rowHeight, "#ffffff", 10, { sourceKind: "token", token: key, tokenValue: value });
-      if (section.kind === "color") {
-        addRect(card, 12, 12, 28, 24, value, 6);
-        await addText(card, key, 52, 9, 190, textStyle(12, colors["text.primary"] || "#241c16", 600, "Inter"));
-        await addText(card, String(value), 52, 27, 190, textStyle(10, colors["text.muted"] || "#7c7168", 400, "Roboto Mono"));
-      } else if (section.kind === "typography") {
-        const spec = value || {};
-        await addText(card, key + "  Aa", 12, 8, 240, textStyle(spec.size || 13, colors["text.primary"] || "#241c16", spec.weight || 400, spec.family === "system" ? "Inter" : spec.family || "Inter"), { sourceKind: "token", token: key });
-        await addText(card, `${spec.family || "system"} · ${spec.size || "—"}px · ${spec.weight || "—"}`, 12, 38, 240, textStyle(10, colors["text.muted"] || "#7c7168", 400, "Roboto Mono"));
+      // PNG from base64
+      let device;
+      if (sc.pngBase64) {
+        const pngBytes = base64ToUint8Array(sc.pngBase64);
+        device = makePhoneFrame(sc.num + " — " + sc.title, pngBytes);
       } else {
-        await addText(card, key, 12, 8, 240, textStyle(12, colors["text.primary"] || "#241c16", 600, "Inter"));
-        await addText(card, typeof value === "object" ? JSON.stringify(value) : String(value), 12, 27, 240, textStyle(10, colors["text.muted"] || "#7c7168", 400, "Roboto Mono"));
+        // Fallback: empty frame
+        device = figma.createFrame();
+        device.name = sc.num + " — " + sc.title;
+        device.resize(393, 852);
+        device.cornerRadius = 52;
+        device.fills = solid("#1a2430");
       }
-      x += 290;
-      if (x > 900) { x = 40; y += rowHeight + 12; }
+
+      device.x = x;
+      device.y = y;
+      page.appendChild(device);
+      allNodes.push(device);
+
+      // Caption
+      const caption = makeCaption(sc.num, sc.title, sc.note);
+      caption.x = x;
+      caption.y = y + PHONE_H + 16;
+      page.appendChild(caption);
+      allNodes.push(caption);
+
+      // Progress
+      figma.ui.postMessage({
+        type: "progress",
+        current: screens.indexOf(sc) + 1,
+        total: screens.length,
+        title: sc.title,
+      });
+
+      // Yield to avoid blocking
+      await new Promise(r => setTimeout(r, 0));
     }
-    y += rowHeight + 38;
+
+    const rowsUsed = Math.ceil(groupScreens.length / COLS);
+    currentY += rowsUsed * STEP_Y + ROW_GAP;
   }
-  const viewport = config.viewport || FALLBACK_CONFIG.viewport;
-  await addText(page, "Reference viewport", 40, y, 240, textStyle(18, colors["text.primary"] || "#241c16", 700, "Georgia"));
-  await addText(page, `${viewport.outerWidth} × ${viewport.outerHeight} outer · ${viewport.screenWidth} × ${viewport.screenHeight} screen · ${viewport.statusBarHeight}px status bar`, 40, y + 32, 700, textStyle(12, colors["text.secondary"] || "#4d423a", 400, "Inter"));
+
+  // Zoom to fit
+  figma.viewport.scrollAndZoomIntoView(allNodes.slice(0, 12));
+  figma.currentPage.selection = [];
+
+  figma.ui.postMessage({ type: "done", count: screens.length });
+  figma.notify("✅ Đã vẽ " + screens.length + " màn hình vào BonVoye Mockups!", { timeout: 4000 });
 }
 
-function variantFill(variant, tokens) {
-  const c = tokens.colors || {};
-  if (variant === "primary" || variant === "recommended" || variant === "on") return c["brand.primary"] || "#b4472b";
-  if (variant === "dark") return c["surface.dark"] || "#16212b";
-  if (variant === "danger") return c["status.danger"] || "#c0392b";
-  if (variant === "warn" || variant === "warning") return c["status.warning"] || "#c98a3c";
-  if (variant === "ok" || variant === "success") return c["status.success"] || "#4f8a5b";
-  return "#ffffff";
-}
-
-async function renderComponentSample(parent, contract, variant, state, tokens) {
-  const c = tokens.colors || {};
-  const ink = c["text.primary"] || "#241c16";
-  const muted = c["text.muted"] || "#7c7168";
-  const primary = c["brand.primary"] || "#b4472b";
-  const dark = c["surface.dark"] || "#16212b";
-  const bg = variantFill(variant, tokens);
-  const foreground = ["primary", "dark", "danger", "recommended", "on", "ok", "warn"].indexOf(variant) >= 0 ? "#ffffff" : ink;
-  const meta = { sourceKind: "component-contract", componentId: contract.id, variant, state };
-  const width = contract.id === "sheet" ? 320 : 250;
-  const height = contract.id === "sheet" ? 180 : contract.id === "progress" ? 72 : 84;
-  const box = addFrame(parent, 0, 0, width, height, contract.id === "map-surface" ? c["map.water"] || "#cfe0dc" : bg, 14, meta);
-
-  if (contract.id === "button") {
-    const button = addFrame(box, 16, 20, width - 32, 44, bg, 12, meta);
-    await addText(button, state === "loading" ? "Loading…" : state === "disabled" ? "Disabled" : "Continue", 14, 13, width - 60, textStyle(14, foreground, 650, "Inter"), meta);
-  } else if (contract.id === "icon-button") {
-    addRect(box, 16, 16, 44, 44, bg, 22, meta);
-    await addText(box, "⌁", 28, 22, 24, textStyle(20, foreground, 700, "Inter"), meta);
-    await addText(box, "Icon button", 72, 27, 150, textStyle(12, ink, 600, "Inter"));
-  } else if (contract.id === "chip") {
-    const chip = addFrame(box, 16, 20, 110, 36, bg, 18, meta);
-    await addText(chip, variant === "on" ? "Selected" : variant === "warn" ? "Warning" : "Filter", 12, 9, 90, textStyle(12, foreground, 650, "Inter"), meta);
-  } else if (contract.id === "card") {
-    await addText(box, variant === "recommended" ? "Recommended option" : "Card title", 16, 14, width - 32, textStyle(15, foreground, 700, "Inter"), meta);
-    await addText(box, "Reusable content container", 16, 40, width - 32, textStyle(12, foreground === ink ? muted : "#e7edf0", 400, "Inter"));
-  } else if (contract.id === "row") {
-    addRect(box, 16, 18, 42, 42, primary, 21, meta);
-    await addText(box, "Row title", 72, 16, 150, textStyle(14, ink, 650, "Inter"), meta);
-    await addText(box, "Detail and metadata", 72, 39, 150, textStyle(11, muted, 400, "Inter"));
-    await addText(box, "›", 220, 28, 20, textStyle(20, muted, 400, "Inter"));
-  } else if (contract.id === "section") {
-    await addText(box, "SECTION LABEL", 16, 14, width - 32, textStyle(10, primary, 650, "Inter"));
-    await addText(box, "Section body", 16, 37, width - 32, textStyle(15, ink, 650, "Inter"));
-  } else if (contract.id === "progress") {
-    await addText(box, "Download progress", 16, 12, width - 32, textStyle(12, ink, 600, "Inter"));
-    addRect(box, 16, 42, width - 32, 10, c["surface.subtle"] || "#f2ead9", 5, meta);
-    addRect(box, 16, 42, state === "complete" ? width - 32 : 138, 10, variant === "warning" ? c["status.warning"] : c["status.success"] || "#4f8a5b", 5, meta);
-  } else if (contract.id === "field") {
-    await addText(box, "Search", 16, 12, width - 32, textStyle(11, muted, 600, "Inter"), meta);
-    addRect(box, 16, 34, width - 32, 38, "#ffffff", 8, meta);
-    await addText(box, "Enter a place…", 28, 45, width - 56, textStyle(12, muted, 400, "Inter"));
-  } else if (contract.id === "price") {
-    await addText(box, "149.000₫", 16, 12, width - 32, textStyle(24, variant === "emphasis" ? primary : ink, 700, "Georgia"), meta);
-    await addText(box, "Full story package", 16, 49, width - 32, textStyle(11, muted, 400, "Inter"));
-  } else if (contract.id === "empty") {
-    await addText(box, "⌂", 16, 14, 32, textStyle(24, primary, 700, "Inter"), meta);
-    await addText(box, "Nothing here yet", 56, 16, 170, textStyle(14, ink, 650, "Inter"), meta);
-    await addText(box, "Try another search", 56, 40, 170, textStyle(11, muted, 400, "Inter"));
-  } else if (contract.id === "sheet") {
-    addRect(box, 136, 12, 48, 5, c["surface.line"] || "#ddd2be", 3, meta);
-    await addText(box, "Bottom sheet", 20, 32, width - 40, textStyle(18, variant === "dark" ? "#ffffff" : ink, 700, "Georgia"), meta);
-    await addText(box, "Sheet content and footer", 20, 70, width - 40, textStyle(12, variant === "dark" ? "#d6e0e5" : muted, 400, "Inter"));
-  } else if (contract.id === "banner") {
-    await addText(box, variant.toUpperCase(), 16, 14, width - 32, textStyle(10, foreground, 700, "Inter"), meta);
-    await addText(box, "Status banner message", 16, 34, width - 32, textStyle(13, foreground, 600, "Inter"));
-  } else if (contract.id === "map-surface") {
-    addRect(box, 0, 0, width, 18, c["map.sand"] || "#ded1b4", 0, meta);
-    addRect(box, 24, 26, 40, 40, primary, 20, meta);
-    addRect(box, 170, 48, 18, 18, c["status.info"] || "#3d6b8e", 9, meta);
-    await addText(box, "Map surface · " + (variant || "realMap"), 16, 126, width - 32, textStyle(12, dark, 650, "Inter"), meta);
+// ── Base64 → Uint8Array ───────────────────────────────────────────────────────
+function base64ToUint8Array(b64) {
+  const binaryStr = atob(b64);
+  const bytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) {
+    bytes[i] = binaryStr.charCodeAt(i);
   }
-  return box;
+  return bytes;
 }
 
-async function createComponentsPage(page, components, tokens) {
-  const contracts = components.components || [];
-  let x = 40;
-  let y = 40;
-  await addText(page, "BonVoye — Components", x, y, 600, textStyle(28, tokens.colors?.["text.primary"] || "#241c16", 700, "Georgia"));
-  y += 56;
-  await addText(page, "Editable samples generated from prototype/spec/components.json", x, y, 700, textStyle(13, tokens.colors?.["text.muted"] || "#7c7168", 400, "Inter"));
-  y += 44;
-  for (const contract of contracts) {
-    const variant = contract.variants?.[0] || "default";
-    const state = contract.states?.[0] || "idle";
-    const component = figma.createComponent();
-    page.appendChild(component);
-    component.name = `BonVoye / ${contract.id} / ${variant} / ${state}`;
-    component.x = x;
-    component.y = y + 28;
-    await renderComponentSample(component, contract, variant, state, tokens);
-    setMeta(component, { sourceKind: "component-contract", componentId: contract.id, variant, state, flutterWidget: contract.flutterWidget, callback: contract.callback || null });
-    await addText(page, contract.id, x, y, 250, textStyle(14, tokens.colors?.["text.primary"] || "#241c16", 700, "Inter"), { sourceKind: "component-label", componentId: contract.id });
-    await addText(page, `${contract.flutterWidget} · ${variant} · ${state}`, x, y + 18, 250, textStyle(10, tokens.colors?.["text.muted"] || "#7c7168", 400, "Roboto Mono"));
-    x += 310;
-    if (x > 980) { x = 40; y += 190; }
-  }
-}
-
-function parseCssColor(value, fallback) {
-  const match = /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i.exec(String(value || ""));
-  if (match) return "#" + [match[1], match[2], match[3]].map((n) => Number(n).toString(16).padStart(2, "0")).join("");
-  if (/^rgba\(/i.test(value)) return fallback;
-  return /^#/.test(String(value || "")) ? value : fallback;
-}
-
-async function renderVisualNode(parent, node, tokens, budget, warnings) {
-  if (!node || (budget && budget.value <= 0)) return;
-  const style = node.style || {};
-  const x = Number(node.x || 0);
-  const y = Number(node.y || 0);
-  const width = Math.max(1, Number(node.width || 1));
-  const height = Math.max(1, Number(node.height || 1));
-  const bg = parseCssColor(style.backgroundColor, null);
-  const border = parseCssColor(style.borderColor, null);
-  const hasPaint = !!bg || !!border;
-  const hasText = !!node.text;
-  const meta = Object.assign({ sourceKind: "html" }, node.meta || {});
-
-  // Skip layout-only wrappers. Keep their children flat in screen coordinates;
-  // nested DOM frames are expensive and can distort child positions in Figma.
-  if (hasPaint && budget.value > 0) {
-    budget.value -= 1;
-    const frame = addFrame(parent, x, y, width, height, bg, parseFloat(style.borderRadius) || 0, meta);
-    if (border) setStroke(frame, border, 1, parseFloat(style.borderWidth) || 1);
-  }
-  if (hasText && budget.value > 0) {
-    budget.value -= 1;
-    const family = style.fontFamily && /Georgia/i.test(style.fontFamily) ? "Georgia" : "Inter";
-    await addText(parent, node.text, x, y, width, textStyle(parseFloat(style.fontSize) || 13, parseCssColor(style.color, tokens.colors?.["text.primary"] || "#241c16"), parseFloat(style.fontWeight) || 400, family), meta);
-  }
-  for (const child of node.children || []) {
-    await renderVisualNode(parent, child, tokens, budget, warnings);
-    if (budget.value <= 0) {
-      if (warnings && !warnings.value) warnings.value = true;
-      break;
-    }
-  }
-}
-
-function screenBodyColor(screen, tokens) {
-  return screen.theme === "dark" ? tokens.colors?.["surface.dark"] || "#16212b" : tokens.colors?.["surface.canvas"] || "#faf5ea";
-}
-
-async function createScreen(page, screen, index, data, config, actionMap) {
-  const viewport = config.viewport || FALLBACK_CONFIG.viewport;
-  const grid = config.screenGrid || FALLBACK_CONFIG.screenGrid;
-  const columns = Number(grid.columns) || 4;
-  const col = index % columns;
-  const row = Math.floor(index / columns);
-  const x = 40 + col * (viewport.outerWidth + Number(grid.columnGap || 56));
-  const y = 40 + row * (viewport.outerHeight + Number(grid.rowGap || 72) + Number(grid.labelHeight || 118));
-  const frame = addFrame(page, x, y, viewport.outerWidth, viewport.outerHeight, "#14181c", 30, {
-    sourceKind: screen.visual?.kind || "contract-placeholder",
-    screenId: screen.id,
-    route: screen.route,
-    family: screen.family,
-    runtimeKind: screen.runtimeKind || "staticFixture",
-    scroll: !!screen.scroll,
-    actions: screen.actions || [],
-    widgetTree: screen.widgetTree || [],
-  });
-  frame.name = `BV Screen / ${screen.route} / ${screen.title}`;
-  const inset = Number(viewport.screenInset || 11);
-  const inner = addFrame(frame, inset, inset, viewport.screenWidth, viewport.screenHeight, screenBodyColor(screen, data.tokens), 22, {
-    sourceKind: screen.visual?.kind || "contract-placeholder",
-    screenId: screen.id,
-    route: screen.route,
-  });
-  inner.clipsContent = true;
-  addRect(inner, 0, 0, viewport.screenWidth, viewport.statusBarHeight, screen.theme === "dark" ? "#16212b" : "#faf5ea", 0, { sourceKind: "device-chrome", screenId: screen.id });
-  addRect(inner, viewport.screenWidth - 127, 8, 118, 33, "#0d1114", 18, { sourceKind: "device-chrome", screenId: screen.id });
-  addRect(inner, (viewport.screenWidth - viewport.homeIndicatorWidth) / 2, viewport.screenHeight - viewport.homeIndicatorBottom - viewport.homeIndicatorHeight, viewport.homeIndicatorWidth, viewport.homeIndicatorHeight, screen.theme === "dark" ? "#ffffff" : "#241c16", 3, { sourceKind: "device-chrome", screenId: screen.id });
-
-  const body = addFrame(inner, 0, viewport.statusBarHeight, viewport.screenWidth, viewport.screenHeight - viewport.statusBarHeight, screenBodyColor(screen, data.tokens), 0, { sourceKind: screen.visual?.kind || "contract-placeholder", screenId: screen.id, route: screen.route });
-  if (screen.visual && screen.visual.kind === "svg" && screen.visual.content) {
-    try {
-      const svg = figma.createNodeFromSvg(screen.visual.content);
-      body.appendChild(svg);
-      svg.x = 0;
-      svg.y = 0;
-      svg.resize(viewport.screenWidth, viewport.screenHeight - viewport.statusBarHeight);
-      setMeta(svg, { sourceKind: "svg", screenId: screen.id, route: screen.route, sourceName: screen.visual.name || "" });
-    } catch (error) {
-      await addText(body, "SVG import warning: " + error.message, 16, 20, 330, textStyle(11, "#c0392b", 600, "Inter"));
-    }
-  } else if (screen.visual && screen.visual.kind === "html" && screen.visual.root) {
-    const visualBudget = { value: 180 };
-    const visualWarnings = { value: false };
-    for (const child of screen.visual.root.children || []) {
-      await renderVisualNode(body, child, data.tokens, visualBudget, visualWarnings);
-      if (visualBudget.value <= 0) break;
-    }
-    if (visualWarnings.value) {
-      await addText(body, "Visual truncated for safe import", 16, 72, 330, textStyle(10, "#c98a3c", 600, "Inter"), { sourceKind: "html-warning", screenId: screen.id });
-    }
-  } else {
-    const accent = data.tokens.colors?.["brand.primary"] || "#b4472b";
-    await addText(body, screen.family ? screen.family.toUpperCase() : "SCREEN", 18, 20, 330, textStyle(10, accent, 700, "Inter"), { sourceKind: "contract-placeholder", screenId: screen.id });
-    await addText(body, screen.title, 18, 46, 330, textStyle(22, screen.theme === "dark" ? "#ffffff" : data.tokens.colors?.["text.primary"] || "#241c16", 400, "Georgia"), { sourceKind: "contract-placeholder", screenId: screen.id });
-    await addText(body, screen.route, 18, 82, 330, textStyle(11, screen.theme === "dark" ? "#b8c5cc" : data.tokens.colors?.["text.muted"] || "#7c7168", 400, "Roboto Mono"), { sourceKind: "contract-placeholder", screenId: screen.id, route: screen.route });
-    addRect(body, 18, 116, 335, 1, screen.theme === "dark" ? "#2b3f4f" : data.tokens.colors?.["surface.line"] || "#ddd2be", 0, { sourceKind: "contract-placeholder", screenId: screen.id });
-    await addText(body, "Widget contract", 18, 136, 330, textStyle(11, accent, 700, "Inter"));
-    const widgets = screen.widgetTree && screen.widgetTree.length ? screen.widgetTree : ["ScreenShell", "ScreenHeader", "ScreenBody"];
-    for (let i = 0; i < widgets.length; i++) {
-      const item = addFrame(body, 18, 164 + i * 42, 335, 32, screen.theme === "dark" ? "#1f2f3c" : "#f2ead9", 8, { sourceKind: "contract-placeholder", screenId: screen.id, widget: widgets[i] });
-      await addText(item, widgets[i], 12, 8, 300, textStyle(12, screen.theme === "dark" ? "#e5edf1" : data.tokens.colors?.["text.secondary"] || "#4d423a", 600, "Inter"));
-    }
-    const actionY = 190 + widgets.length * 42;
-    await addText(body, "Actions", 18, actionY, 330, textStyle(11, accent, 700, "Inter"));
-    const actionList = screen.actions || [];
-    for (let i = 0; i < Math.min(actionList.length, 4); i++) {
-      const action = actionMap[actionList[i]];
-      await addText(body, "• " + actionList[i] + (action?.category ? "  ·  " + action.category : ""), 18, actionY + 22 + i * 20, 335, textStyle(10, screen.theme === "dark" ? "#b8c5cc" : data.tokens.colors?.["text.muted"] || "#7c7168", 400, "Roboto Mono"), { sourceKind: "action-reference", screenId: screen.id, actionId: actionList[i], actionPayload: action?.payload || null });
-    }
-  }
-  const captionY = y + viewport.outerHeight + 14;
-  await addText(page, screen.title, x, captionY, viewport.outerWidth, textStyle(14, data.tokens.colors?.["text.primary"] || "#241c16", 700, "Inter"), { sourceKind: "screen-caption", screenId: screen.id, route: screen.route });
-  await addText(page, `${screen.id} · ${screen.route}`, x, captionY + 22, viewport.outerWidth, textStyle(10, data.tokens.colors?.["text.muted"] || "#7c7168", 400, "Roboto Mono"));
-  return frame;
-}
-
-async function createScreensPage(page, data, config) {
-  const actionMap = Object.fromEntries((data.actions.actions || []).map((action) => [action.id, action]));
-  const existing = page.children.filter((node) => node.type === "FRAME" && /^BV Screen \/ /.test(node.name)).length;
-  for (let i = 0; i < (data.screens.screens || []).length; i++) {
-    notify(`Rendering screen ${i + 1}/${data.screens.screens.length}: ${data.screens.screens[i].route}`);
-    await createScreen(page, data.screens.screens[i], existing + i, data, config, actionMap);
-    if ((i + 1) % 5 === 0) notify(`Created ${i + 1}/${data.screens.screens.length} screen frames`);
-  }
-  return existing + (data.screens.screens || []).length;
-}
-
-function screensContentBottom(data, config, screenCount) {
-  const viewport = config.viewport || FALLBACK_CONFIG.viewport;
-  const grid = config.screenGrid || FALLBACK_CONFIG.screenGrid;
-  const columns = Math.max(1, Number(grid.columns) || 4);
-  const count = Number(screenCount) || (data.screens.screens || []).length;
-  const rows = Math.ceil(count / columns);
-  const rowPitch = Number(viewport.outerHeight || 852) + Number(grid.rowGap || 72) + Number(grid.labelHeight || 118);
-  return 40 + rows * rowPitch + 40;
-}
-
-function removeLegacyMetadataPage(config, screensPage) {
-  const legacyName = (config.pageNames && config.pageNames.metadata) || "BonVoye • Metadata";
-  const legacyPage = pageByName(legacyName);
-  if (!legacyPage || legacyPage === screensPage) return;
-  const generatedOnly = legacyPage.children.every((node) => node.getPluginData("bv.generated") === "true");
-  if (generatedOnly) {
-    legacyPage.remove();
-    notify(`Removed legacy generated page: ${legacyName}`);
-  } else {
-    notify(`Legacy page kept because it contains non-generated content: ${legacyName}`);
-  }
-}
-
-async function createMetadataSection(page, data, startY) {
-  let y = Number(startY) || 40;
-  const ink = data.tokens.colors?.["text.primary"] || "#241c16";
-  const muted = data.tokens.colors?.["text.muted"] || "#7c7168";
-  await addText(page, "BonVoye — Metadata", 40, y, 700, textStyle(28, ink, 700, "Georgia"));
-  y += 56;
-  await addText(page, "Actions, flow coverage, and transition assertions preserved from the prototype contracts", 40, y, 900, textStyle(13, muted, 400, "Inter"));
-  y += 44;
-  await addText(page, "Actions", 40, y, 700, textStyle(20, ink, 700, "Georgia"));
-  y += 38;
-  for (const action of data.actions.actions || []) {
-    const row = addFrame(page, 40, y, 860, 46, "#ffffff", 8, { sourceKind: "action-definition", actionId: action.id, actionPayload: action.payload || {}, category: action.category, route: action.route || null, guards: action.guards || [], sideEffects: action.sideEffects || [] });
-    await addText(row, action.id, 14, 8, 210, textStyle(12, ink, 700, "Inter"), { sourceKind: "action-definition", actionId: action.id });
-    await addText(row, `${action.category || "—"} · payload ${JSON.stringify(action.payload || {})}`, 230, 9, 590, textStyle(10, muted, 400, "Roboto Mono"));
-    y += 56;
-  }
-  y += 20;
-  await addText(page, "Flows", 40, y, 700, textStyle(20, ink, 700, "Georgia"));
-  y += 38;
-  for (const flow of data.flows.flows || []) {
-    const row = addFrame(page, 40, y, 860, 58, "#ffffff", 8, { sourceKind: "flow-definition", flowId: flow.id, routes: flow.routes || [], stepCount: flow.stepCount || 0 });
-    await addText(row, flow.title, 14, 9, 330, textStyle(13, ink, 700, "Inter"));
-    await addText(row, `${flow.id} · ${flow.stepCount} steps`, 14, 32, 260, textStyle(10, muted, 400, "Roboto Mono"));
-    await addText(row, (flow.routes || []).join(" → "), 280, 20, 550, textStyle(10, muted, 400, "Roboto Mono"));
-    y += 68;
-  }
-}
-
-function normalizeConfig(config) {
-  return Object.assign({}, FALLBACK_CONFIG, config || {}, {
-    pageNames: Object.assign({}, FALLBACK_CONFIG.pageNames, config?.pageNames || {}),
-    viewport: Object.assign({}, FALLBACK_CONFIG.viewport, config?.viewport || {}),
-    screenGrid: Object.assign({}, FALLBACK_CONFIG.screenGrid, config?.screenGrid || {}),
-  });
-}
-
-async function runImport(data, mode, scope) {
-  if (!data || !data.tokens || !data.components || !data.screens || !data.actions || !data.flows) {
-    throw new Error("Missing one or more required contract files");
-  }
-  const config = normalizeConfig(data.config);
-  const importSpec = scope !== "visual";
-  const importVisual = scope !== "spec";
-  const pages = {
-    tokens: getPage(config.pageNames.tokens),
-    components: getPage(config.pageNames.components),
-    screens: getPage(config.pageNames.screens),
+// ── Single Home Screen builder ────────────────────────────────────
+async function buildHomeScreen() {
+  await loadFonts();
+  const T = {
+    terracotta: "#b4472b", ink: "#241c16", ink70: "#4d423a",
+    ink45: "#7c7168", paper: "#faf5ea", line: "#ddd2be",
   };
-  if (mode === "replace-generated") {
-    Object.values(pages).forEach(clearGenerated);
-    removeLegacyMetadataPage(config, pages.screens);
+  const PAL = {
+    roof: "#b4472b", roofDark: "#8f3620", roofRidge: "#6f2916",
+    roofGrey: "#4a5560", roofGreyDark: "#374049",
+    wall: "#e0bd8e", wallDark: "#c09562",
+    wood: "#c98a3c", woodDark: "#a06c28",
+    grass: "#cfdcae", tree: "#4f6f52", treeLight: "#7a9b78",
+  };
+
+  function pt(p) { return p[0].toFixed(1) + "," + p[1].toFixed(1); }
+  function polyS(pts, fill) { return `<polygon points="${pts.map(pt).join(" ")}" fill="${fill}"/>`; }
+
+  function isoHouse(bx, by, w, d, h, o) {
+    o = o || {};
+    const roof = o.roof || PAL.roof, roofD = o.roofDark || PAL.roofDark;
+    const wall = o.wall || PAL.wall, wallD = o.wallDark || PAL.wallDark;
+    const hw = w/2, hd = d/4, cx = bx, cy = by - hd;
+    const F=[bx,by], R=[bx+hw,by-hd], L=[bx-hw,by-hd];
+    const up = p => [p[0], p[1]-h];
+    const k = 1 + (o.eave != null ? o.eave : 0.2);
+    const sc = p => [cx+(p[0]-cx)*k, cy+(p[1]-cy)*k-h];
+    const Fe=sc(F), Re=sc(R), Le=sc(L);
+    const rh = o.roofH != null ? o.roofH : Math.max(9, w*0.34);
+    const apex = [bx, cy-h-rh];
+    let s = "";
+    s += polyS([L,F,up(F),up(L)], wallD);
+    s += polyS([F,R,up(R),up(F)], wall);
+    if (!o.noDoor && w > 26) {
+      const dw=w*0.16, dh=h*0.6, mx=(F[0]+R[0])/2, my=(F[1]+R[1])/2;
+      const skew=(-Math.atan2(hd,hw)*180/Math.PI).toFixed(2);
+      s += `<rect x="${(mx-dw/2).toFixed(1)}" y="${(my-dh).toFixed(1)}" width="${dw.toFixed(1)}" height="${dh.toFixed(1)}" fill="${PAL.woodDark}" opacity=".82" transform="translate(${mx.toFixed(1)} ${my.toFixed(1)}) skewY(${skew}) translate(${(-mx).toFixed(1)} ${(-my).toFixed(1)})"/>`;
+    }
+    s += polyS([Le,Fe,apex], roofD);
+    s += polyS([Fe,Re,apex], roof);
+    s += `<polyline points="${pt(Le)} ${pt(Fe)} ${pt(Re)}" fill="none" stroke="${PAL.roofRidge}" stroke-width="1.6" stroke-linejoin="round" opacity=".55"/>`;
+    s = `<ellipse cx="${cx.toFixed(1)}" cy="${(by-hd+2).toFixed(1)}" rx="${(hw*1.15).toFixed(1)}" ry="${(hd*1.2).toFixed(1)}" fill="#8a7358" opacity=".16"/>` + s;
+    return s;
   }
-  let screenCount = 0;
-  if (importSpec) {
-    notify("Creating token page…");
-    await createTokensPage(pages.tokens, data.tokens, config);
-    notify("Creating component samples…");
-    await createComponentsPage(pages.components, data.components, data.tokens);
+
+  function isoTower(bx, by, w, tiers, tierH) {
+    let s="", cw=w, y=by;
+    for (let i=0; i<tiers; i++) {
+      s += isoHouse(bx, y, cw, cw*0.78, tierH, { eave:0.3, roofH:cw*0.3, noDoor:true, roof:PAL.wood, roofDark:PAL.woodDark, wall:"#d8a05a", wallDark:"#b07e3c" });
+      y -= tierH + cw*0.22; cw *= 0.84;
+    }
+    return s;
   }
-  if (importVisual) {
-    notify("Creating screen frames…");
-    screenCount = await createScreensPage(pages.screens, data, config);
+
+  function isoTree(x, y, r) {
+    return `<ellipse cx="${x}" cy="${y+1}" rx="${(r*0.9).toFixed(1)}" ry="${(r*0.32).toFixed(1)}" fill="#8a7358" opacity=".15"/>` +
+      `<rect x="${(x-r*0.11).toFixed(1)}" y="${(y-r*0.75).toFixed(1)}" width="${(r*0.22).toFixed(1)}" height="${(r*0.8).toFixed(1)}" fill="#7a5c3a"/>` +
+      `<circle cx="${x}" cy="${(y-r*1.05).toFixed(1)}" r="${(r*0.72).toFixed(1)}" fill="${PAL.tree}"/>` +
+      `<circle cx="${(x-r*0.34).toFixed(1)}" cy="${(y-r*0.8).toFixed(1)}" r="${(r*0.5).toFixed(1)}" fill="${PAL.treeLight}" opacity=".85"/>` +
+      `<circle cx="${(x+r*0.36).toFixed(1)}" cy="${(y-r*0.88).toFixed(1)}" r="${(r*0.46).toFixed(1)}" fill="${PAL.tree}"/>`;
   }
-  if (importSpec) {
-    notify("Creating metadata section on Screens…");
-    await createMetadataSection(pages.screens, data, screensContentBottom(data, config, screenCount));
+
+  function buildHeroSVG() {
+    let s = `<rect width="360" height="176" fill="none"/>`;
+    s += `<path d="M0,150 C70,132 130,158 190,142 C250,126 310,150 360,136 L360,176 L0,176 Z" fill="${PAL.grass}" opacity=".65"/>`;
+    s += isoTower(66, 150, 42, 3, 22);
+    s += isoHouse(150, 156, 74, 44, 34, { eave: 0.28, roofH: 26 });
+    s += isoHouse(226, 150, 58, 36, 28, { roof: PAL.roofGrey, roofDark: PAL.roofGreyDark });
+    s += isoHouse(292, 158, 50, 32, 24, { eave: 0.3 });
+    s += isoTree(196,160,18) + isoTree(258,166,15) + isoTree(112,164,14) + isoTree(336,154,16);
+    s += `<path d="M40,44 q6,-5 12,0 q6,-5 12,0" fill="none" stroke="#6f8797" stroke-width="1.6"/>`;
+    s += `<path d="M84,28 q5,-4 10,0 q5,-4 10,0" fill="none" stroke="#6f8797" stroke-width="1.4"/>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 176">${s}</svg>`;
   }
-  figma.ui.postMessage({ type: "done", summary: {
-    pages: Object.values(pages).map((page) => page.name),
-    screens: data.screens.screens.length,
-    components: data.components.components.length,
-    actions: data.actions.actions.length,
-    flows: data.flows.flows.length,
-    visualSources: Object.keys(data.visuals || {}).length,
-    scope: scope || "all",
-  }});
-  figma.notify(`BonVoye import complete: ${data.screens.screens.length} screens`);
+
+  function makeText(content, opts) {
+    opts = opts || {};
+    const t = figma.createText();
+    t.characters = content;
+    t.fontSize = opts.size || 13;
+    t.fontName = { family: opts.serif ? "Georgia" : "Inter", style: opts.weight || "Regular" };
+    t.fills = solid(opts.color || T.ink);
+    if (opts.ls != null) t.letterSpacing = { value: opts.ls, unit: "PERCENT" };
+    t.name = content.slice(0, 40);
+    return t;
+  }
+
+  await figma.loadFontAsync({ family: "Georgia", style: "Regular" });
+  await figma.loadFontAsync({ family: "Georgia", style: "Bold" });
+
+  const device = figma.createFrame();
+  device.name = "📱 BonVoye — Home (mo-dau · step 3)";
+  device.resize(393, 852);
+  device.cornerRadius = 52;
+  device.clipsContent = true;
+  device.fills = solid("#0b0d0f");
+  device.strokes = [{ type: "SOLID", color: hexRgb("#3a4249"), opacity: 1 }];
+  device.strokeWeight = 1.5;
+  device.strokeAlign = "OUTSIDE";
+  device.effects = [{ type: "DROP_SHADOW", color: { r:0,g:0,b:0,a:0.85 }, offset: { x:0,y:34 }, radius:70, spread:-18, visible:true, blendMode:"NORMAL" }];
+
+  const screen = figma.createFrame();
+  screen.name = "Screen";
+  screen.resize(371, 830);
+  screen.x = 11; screen.y = 11;
+  screen.cornerRadius = 42; screen.clipsContent = true;
+  screen.fills = [{ type:"GRADIENT_LINEAR", gradientTransform:[[0,1,0.5],[-1,0,1]], gradientStops:[
+    { position:0, color:{ ...hexRgb("#fbf6ec"), a:1 } },
+    { position:0.44, color:{ ...hexRgb("#f4e9d6"), a:1 } },
+    { position:1, color:{ ...hexRgb("#eddfc6"), a:1 } },
+  ]}];
+
+  const island = figma.createRectangle();
+  island.name = "Dynamic Island"; island.resize(118, 33);
+  island.x = (371-118)/2; island.y = 9; island.cornerRadius = 16;
+  island.fills = solid("#0b0d0f"); screen.appendChild(island);
+
+  const sbTime = makeText("09:41", { size:15, weight:"Semi Bold", color:T.ink });
+  sbTime.x = 26; sbTime.y = 17; screen.appendChild(sbTime);
+
+  const gpsChip = figma.createFrame(); gpsChip.name = "GPS";
+  gpsChip.resize(60,24); gpsChip.x = 371-26-60; gpsChip.y = 13;
+  gpsChip.fills = solid("#e8f4e8",0.9); gpsChip.cornerRadius = 12;
+  gpsChip.strokes = solid("#a8d8a8"); gpsChip.strokeWeight = 1;
+  const gpsL = makeText("⚡ GPS", { size:10.5, weight:"Semi Bold", color:"#2d6a2d" });
+  gpsL.x = 8; gpsL.y = 5; gpsChip.appendChild(gpsL);
+  screen.appendChild(gpsChip);
+
+  const langBtn = figma.createFrame(); langBtn.name = "Lang Button";
+  langBtn.resize(108,30); langBtn.x = 371-22-108; langBtn.y = 52;
+  langBtn.cornerRadius = 20; langBtn.fills = solid("#ffffff",0.7);
+  langBtn.strokes = solid(T.line); langBtn.strokeWeight = 1;
+  const langL = makeText("🌐 Tiếng Việt", { size:11.5, weight:"Semi Bold", color:T.ink });
+  langL.x = 10; langL.y = 8; langBtn.appendChild(langL); screen.appendChild(langBtn);
+
+  const heroY = 90;
+  const ey = makeText("CHÀO MỪNG BẠN ĐẾN VỚI", { size:10, weight:"Semi Bold", color:T.ink45, ls:15 });
+  ey.x = 22; ey.y = heroY; screen.appendChild(ey);
+  const title = makeText("BonVoye", { size:32, weight:"Bold", serif:true, color:T.ink });
+  title.x = 22; title.y = heroY+18; screen.appendChild(title);
+  const tag = makeText("Những câu chuyện ẩn trong từng con phố.", { size:13, weight:"Regular", color:T.ink70 });
+  tag.x = 22; tag.y = heroY+62; screen.appendChild(tag);
+
+  try {
+    const heroSvg = buildHeroSVG();
+    const heroArt = figma.createNodeFromSvg(heroSvg);
+    heroArt.name = "Home Hero Art"; heroArt.resize(371,176);
+    heroArt.x = 0; heroArt.y = heroY+86; screen.appendChild(heroArt);
+  } catch(_) {}
+
+  const artBottom = heroY+86+176;
+  const cityLabelY = artBottom+6;
+  const cityL = makeText("THÀNH PHỐ", { size:10, weight:"Semi Bold", color:T.ink45, ls:15 });
+  cityL.x = 22; cityL.y = cityLabelY; screen.appendChild(cityL);
+
+  const hanoiY = cityLabelY+18;
+  const hanoiRow = figma.createFrame(); hanoiRow.name = "City — Hà Nội (selected)";
+  hanoiRow.resize(327,60); hanoiRow.x = 22; hanoiRow.y = hanoiY;
+  hanoiRow.cornerRadius = 14; hanoiRow.fills = solid(T.paper);
+  hanoiRow.strokes = solid(T.terracotta); hanoiRow.strokeWeight = 1;
+  const hn1 = makeText("Hà Nội", { size:14, weight:"Semi Bold", color:T.ink }); hn1.x=13; hn1.y=12; hanoiRow.appendChild(hn1);
+  const hn2 = makeText("2 chủ đề", { size:11.5, weight:"Regular", color:T.ink45 }); hn2.x=13; hn2.y=36; hanoiRow.appendChild(hn2);
+  screen.appendChild(hanoiRow);
+
+  const hueY = hanoiY+60+11;
+  const hueRow = figma.createFrame(); hueRow.name = "City — Huế";
+  hueRow.resize(327,60); hueRow.x=22; hueRow.y=hueY;
+  hueRow.cornerRadius=14; hueRow.fills=[]; hueRow.strokes=solid(T.line);
+  hueRow.strokeWeight=1; hueRow.dashPattern=[6,4];
+  const hue1 = makeText("Huế", { size:14, weight:"Semi Bold", color:T.ink70 }); hue1.x=13; hue1.y=12; hueRow.appendChild(hue1);
+  const hue2 = makeText("0 chủ đề", { size:11.5, weight:"Regular", color:T.ink45 }); hue2.x=13; hue2.y=36; hueRow.appendChild(hue2);
+  const soonC = figma.createFrame(); soonC.resize(58,26); soonC.x=327-13-58; soonC.y=17;
+  soonC.cornerRadius=20; soonC.fills=solid("#efe9df"); soonC.strokes=solid("#d6cab6"); soonC.strokeWeight=1;
+  const soonL = makeText("Sắp có", { size:11, weight:"Semi Bold", color:T.ink45 }); soonL.x=9; soonL.y=6; soonC.appendChild(soonL);
+  hueRow.appendChild(soonC); screen.appendChild(hueRow);
+
+  const topicLY = hueY+60+12;
+  const topicL = makeText("CHỦ ĐỀ", { size:10, weight:"Semi Bold", color:T.ink45, ls:15 });
+  topicL.x=22; topicL.y=topicLY; screen.appendChild(topicL);
+
+  [
+    { name:"36 phố phường", sub:"Cửa ô, phố nghề và những người giữ nếp", meta:"~75 phút · 4 điểm" },
+    { name:"Ngàn năm bia đá", sub:"Đường học, bia tiến sĩ và giếng trời", meta:"~90 phút · 4 điểm" },
+  ].forEach((tp, idx) => {
+    const tY = topicLY+18+(64+11)*idx;
+    const tf = figma.createFrame(); tf.name = "Topic — "+tp.name;
+    tf.resize(327,64); tf.x=22; tf.y=tY; tf.cornerRadius=14;
+    tf.fills=solid(T.paper); tf.strokes=solid(T.line); tf.strokeWeight=1;
+    const tn = makeText(tp.name, { size:14, weight:"Semi Bold", color:T.ink }); tn.x=13; tn.y=10; tf.appendChild(tn);
+    const ts = makeText(tp.sub, { size:11.5, weight:"Regular", color:T.ink45 }); ts.x=13; ts.y=33; tf.appendChild(ts);
+    const tm = makeText(tp.meta, { size:11, weight:"Regular", color:T.ink45 });
+    tm.textAlignHorizontal="RIGHT"; tm.resize(110,16); tm.x=327-13-110; tm.y=10; tf.appendChild(tm);
+    screen.appendChild(tf);
+  });
+
+  const ctaBar = figma.createFrame(); ctaBar.name = "Sticky CTA";
+  ctaBar.resize(371,88); ctaBar.x=0; ctaBar.y=830-88;
+  ctaBar.fills=solid("#faf5ea",0.96); ctaBar.strokes=solid(T.line); ctaBar.strokeWeight=1;
+  ctaBar.strokeAlign="INSIDE";
+  const ctaBtn = figma.createFrame(); ctaBtn.resize(327,48); ctaBtn.x=22; ctaBtn.y=10;
+  ctaBtn.cornerRadius=14; ctaBtn.fills=solid(T.paper); ctaBtn.strokes=solid(T.line); ctaBtn.strokeWeight=1;
+  ctaBtn.opacity=0.42;
+  const ctaL = makeText("Chọn thành phố và chủ đề để bắt đầu", { size:13.5, weight:"Semi Bold", color:T.ink });
+  ctaL.textAlignHorizontal="CENTER"; ctaL.resize(295,20); ctaL.x=16; ctaL.y=14;
+  ctaBtn.appendChild(ctaL); ctaBar.appendChild(ctaBtn); screen.appendChild(ctaBar);
+
+  const homeBar = figma.createRectangle(); homeBar.name = "Home Bar";
+  homeBar.resize(134,5); homeBar.x=(371-134)/2; homeBar.y=830-12;
+  homeBar.cornerRadius=3; homeBar.fills=solid(T.ink,0.34);
+  screen.appendChild(homeBar);
+
+  device.appendChild(screen);
+  const center = figma.viewport.center;
+  device.x = Math.round(center.x - 393/2);
+  device.y = Math.round(center.y - 852/2);
+  figma.currentPage.appendChild(device);
+  figma.currentPage.selection = [device];
+  figma.viewport.scrollAndZoomIntoView([device]);
+
+  figma.ui.postMessage({ type: "done" });
 }
 
-figma.ui.onmessage = async (message) => {
-  if (message.type === "cancel") return figma.closePlugin();
-  if (message.type === "load-file-cache") return loadFileCache();
-  if (message.type === "save-file-cache") return saveFileCache(message.cache);
-  if (message.type !== "import") return;
-  try {
-    await runImport(message.data, message.mode || "replace-generated", message.scope || "all");
-  } catch (error) {
-    figma.ui.postMessage({ type: "error", message: error && error.stack ? error.stack : String(error) });
-    figma.notify("BonVoye import failed");
+// ── Message handler ───────────────────────────────────────────────────────────
+figma.ui.onmessage = async (msg) => {
+  if (msg.type === "draw-all-screens") {
+    try {
+      await drawAllScreens(msg.screens);
+    } catch (err) {
+      const m = String(err && err.message || err);
+      figma.notify("❌ " + m, { error: true });
+      figma.ui.postMessage({ type: "error", message: m });
+    }
+  }
+
+  if (msg.type === "build-home") {
+    try {
+      await buildHomeScreen();
+    } catch (err) {
+      const m = String(err && err.message || err);
+      figma.notify("❌ " + m, { error: true });
+      figma.ui.postMessage({ type: "error", message: m });
+    }
+  }
+
+  if (msg.type === "close") {
+    figma.closePlugin();
   }
 };

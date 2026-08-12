@@ -1,6 +1,6 @@
 {
-  "name": "BonVoye Spec Importer",
-  "id": "com.bonvoye.spec-importer",
+  "name": "BonVoye — Screen Builder",
+  "id": "com.bonvoye.screen-builder",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",

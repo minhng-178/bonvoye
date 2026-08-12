@@ -1,343 +1,624 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="vi">
 <head>
-  <meta charset="utf-8">
-  <style>
-    :root { color-scheme: light dark; font: 13px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    body { margin: 0; padding: 18px; color: var(--figma-color-text); background: var(--figma-color-bg); }
-    h1 { margin: 0 0 6px; font-size: 20px; }
-    p { color: var(--figma-color-text-secondary); line-height: 1.45; }
-    .card { border: 1px solid var(--figma-color-border); border-radius: 10px; padding: 12px; margin: 12px 0; }
-    label { display: block; font-weight: 600; margin: 10px 0 5px; }
-    input[type=file] { width: 100%; }
-    select, button { font: inherit; }
-    select { width: 100%; padding: 8px; border: 1px solid var(--figma-color-border); border-radius: 6px; background: var(--figma-color-bg); color: var(--figma-color-text); }
-    button { border: 0; border-radius: 7px; padding: 9px 14px; cursor: pointer; }
-    #import { background: #b4472b; color: #fff; font-weight: 700; }
-    #cancel { background: var(--figma-color-bg-secondary); color: var(--figma-color-text); }
-    .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
-    .file-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; }
-    .file-toolbar button { padding: 5px 8px; background: var(--figma-color-bg-secondary); color: var(--figma-color-text); }
-    .selected-files { white-space: pre-wrap; max-height: 110px; overflow: auto; margin-top: 7px; color: var(--figma-color-text-secondary); font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; }
-    #status { white-space: pre-wrap; min-height: 44px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
-    .ok { color: #4f8a5b; } .warn { color: #c98a3c; } .error { color: #c0392b; }
-    ul { margin: 7px 0 0; padding-left: 18px; color: var(--figma-color-text-secondary); }
-    small { color: var(--figma-color-text-secondary); }
-  </style>
+<meta charset="utf-8">
+<title>BonVoye — Plugin</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  color: #1a2430;
+  background: #f0f4f8;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+.header {
+  background: #1a2430;
+  color: #fff;
+  padding: 14px 18px 12px;
+  flex: 0 0 auto;
+}
+.header-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.header-logo {
+  width: 26px;
+  height: 26px;
+  background: #b4472b;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex: 0 0 auto;
+}
+.header-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.header-sub {
+  font-size: 10px;
+  color: rgba(255,255,255,0.45);
+  margin-top: 1px;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  margin-top: 12px;
+  gap: 0;
+}
+.tab-btn {
+  flex: 1;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: rgba(255,255,255,0.5);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: -1px;
+}
+.tab-btn.active {
+  color: #fff;
+  border-bottom-color: #b4472b;
+}
+.tab-btn:hover:not(.active) { color: rgba(255,255,255,0.75); }
+
+/* ── Content ─────────────────────────────────────────────────────────────────── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.tab-panel { display: none; padding: 0; }
+.tab-panel.active { display: flex; flex-direction: column; height: 100%; }
+
+/* ── Tab 1: All Mockups ──────────────────────────────────────────────────────── */
+.drop-zone {
+  margin: 14px;
+  border: 2px dashed #c8d5e0;
+  border-radius: 12px;
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+  position: relative;
+}
+.drop-zone.dragover {
+  border-color: #b4472b;
+  background: #fdf4f0;
+}
+.drop-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.drop-icon { font-size: 28px; margin-bottom: 8px; }
+.drop-title { font-size: 13px; font-weight: 600; color: #1a2430; margin-bottom: 4px; }
+.drop-sub { font-size: 11px; color: #8899aa; line-height: 1.4; }
+
+.screens-info {
+  margin: 0 14px;
+  padding: 12px 14px;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e0eaf0;
+  display: none;
+}
+.screens-info.visible { display: block; }
+.screens-info-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.screens-count {
+  font-size: 20px;
+  font-weight: 800;
+  color: #b4472b;
+  letter-spacing: -0.03em;
+}
+.screens-count-label {
+  font-size: 11px;
+  color: #8899aa;
+  margin-top: 1px;
+}
+.screens-clear {
+  background: none;
+  border: 1px solid #e0eaf0;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: #8899aa;
+  cursor: pointer;
+}
+.screens-clear:hover { background: #f5f8fa; color: #1a2430; }
+
+.groups-list {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.group-chip {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: #eef4f8;
+  color: #4a6070;
+  border: 1px solid #d5e5ee;
+}
+
+/* ── Progress ────────────────────────────────────────────────────────────────── */
+.progress-section {
+  margin: 12px 14px 0;
+  display: none;
+}
+.progress-section.visible { display: block; }
+.progress-bar-outer {
+  height: 6px;
+  background: #e0eaf0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.progress-bar-inner {
+  height: 100%;
+  background: #b4472b;
+  border-radius: 4px;
+  width: 0%;
+  transition: width 0.2s ease;
+}
+.progress-label {
+  font-size: 10.5px;
+  color: #8899aa;
+  line-height: 1.4;
+}
+.progress-count {
+  font-weight: 700;
+  color: #1a2430;
+}
+
+.log-area {
+  margin: 8px 14px 0;
+  background: #1a2430;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: "SF Mono", Menlo, monospace;
+  font-size: 9.5px;
+  color: #7ab8d0;
+  line-height: 1.6;
+  max-height: 80px;
+  overflow-y: auto;
+  display: none;
+}
+.log-area.visible { display: block; }
+
+.success-banner {
+  margin: 8px 14px 0;
+  padding: 10px 14px;
+  background: #e8f5ea;
+  border: 1px solid #b6d9bc;
+  border-radius: 8px;
+  color: #2a6838;
+  font-size: 12px;
+  font-weight: 600;
+  display: none;
+}
+.success-banner.visible { display: flex; align-items: center; gap: 8px; }
+
+/* ── Footer buttons ──────────────────────────────────────────────────────────── */
+.footer {
+  padding: 10px 14px 14px;
+  flex: 0 0 auto;
+  background: #f0f4f8;
+  border-top: 1px solid #dde8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-primary {
+  width: 100%;
+  height: 42px;
+  background: #b4472b;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-primary:hover:not(:disabled) { background: #9a3b23; }
+.btn-primary:active:not(:disabled) { transform: translateY(1px); }
+.btn-primary:disabled { background: #c89f96; cursor: not-allowed; }
+
+.btn-secondary {
+  width: 100%;
+  height: 36px;
+  background: #fff;
+  color: #4a6070;
+  border: 1px solid #d0dde8;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-secondary:hover { background: #f5f8fa; color: #1a2430; }
+
+/* ── Tab 2: Home Screen ──────────────────────────────────────────────────────── */
+.home-tab-content {
+  padding: 14px;
+  flex: 1;
+}
+
+.screen-card {
+  background: #fff;
+  border: 1px solid #e0eaf0;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.phone-preview {
+  width: 52px;
+  flex: 0 0 52px;
+  height: 94px;
+  background: #111;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.phone-screen-preview {
+  width: 46px;
+  height: 84px;
+  background: linear-gradient(180deg, #fbf6ec 0%, #f4e9d6 44%, #eddfc6 100%);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+.phone-island-mini {
+  position: absolute;
+  top: 2px; left: 50%;
+  transform: translateX(-50%);
+  width: 14px; height: 4px;
+  background: #111;
+  border-radius: 3px;
+}
+.mini-lines { position: absolute; top: 12px; left: 4px; right: 4px; }
+.mini-line { height: 4px; background: #241c16; border-radius: 2px; margin-bottom: 3px; opacity: 0.15; }
+.mini-line.title { width: 60%; opacity: 0.5; height: 6px; }
+.mini-art-bg {
+  position: absolute;
+  left: 0; right: 0;
+  top: 40px; height: 24px;
+  background: linear-gradient(to right, #cfdcae, #a9bd84);
+  opacity: 0.7;
+}
+.mini-rows { position: absolute; top: 68px; left: 4px; right: 4px; }
+.mini-rowitem { height: 7px; background: #faf5ea; border: 0.5px solid #ddd2be; border-radius: 2px; margin-bottom: 2px; }
+.mini-rowitem.sel { border-color: #b4472b; }
+
+.screen-info { flex: 1; min-width: 0; }
+.screen-badge {
+  display: inline-block;
+  background: #f2e6ce;
+  color: #b4472b;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 8px;
+  border: 1px solid #e4d3b3;
+  margin-bottom: 6px;
+}
+.screen-title { font-size: 13px; font-weight: 600; color: #1a2430; margin-bottom: 4px; }
+.screen-desc { font-size: 11px; color: #6b7d8d; line-height: 1.45; }
+
+.feature-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 12px;
+  background: #fff;
+  border: 1px solid #e0eaf0;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.feature-list li {
+  font-size: 11.5px;
+  color: #4a6070;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.feature-list li::before {
+  content: "✓";
+  color: #4f8a5b;
+  font-weight: 700;
+  font-size: 10px;
+  width: 14px;
+  text-align: center;
+  flex: 0 0 auto;
+}
+</style>
 </head>
 <body>
-  <h1>BonVoye Spec Importer</h1>
-  <p>Select the prototype contracts to create up to three editable Figma pages. Metadata is appended to the Screens page. HTML and SVG files are optional visual sources; contract-only screens are labeled placeholders.</p>
 
-  <div class="card">
-    <label for="contracts">Contract JSON files</label>
-    <input id="contracts" type="file" multiple accept=".json,application/json">
-    <small>Required: design-tokens.json, components.json, screens.json, actions.json, flows.json. Optional: figma-import.json.</small>
+<div class="header">
+  <div class="header-top">
+    <div class="header-logo">🗺</div>
+    <div>
+      <div class="header-title">BonVoye Plugin</div>
+      <div class="header-sub">Vẽ prototype screens vào Figma</div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('all')">📱 All Mockups (50)</button>
+    <button class="tab-btn" onclick="switchTab('home')">🏠 Home Screen</button>
+  </div>
+</div>
 
-    <label for="visuals">Visual source folder</label>
-    <input id="visuals" type="file" webkitdirectory directory multiple>
-    <small>Select one folder containing <b>figma-visual-sources.html</b> and all CSS files. The folder is imported as one visual batch; unsupported files are ignored.</small>
+<div class="content">
 
-    <div class="file-toolbar"><strong>Selected files</strong><button id="clear-files" type="button">Clear selected files</button></div>
-    <div id="selected-files" class="selected-files">No files selected.</div>
+  <!-- Tab: All Mockups -->
+  <div class="tab-panel active" id="tab-all">
 
-    <label for="scope">Import scope</label>
-    <select id="scope">
-      <option value="spec">Spec only — tokens, components, screens</option>
-      <option value="visual">Visual only — replace screen visuals</option>
-      <option value="all">Spec + visual</option>
-    </select>
+    <div class="drop-zone" id="drop-zone">
+      <input type="file" accept=".json" id="file-input">
+      <div class="drop-icon">📂</div>
+      <div class="drop-title">Chọn mockup-screens.json</div>
+      <div class="drop-sub">Chạy <code>node capture.js</code> trong thư mục<br><code>figma-plugin/</code> để tạo file này.</div>
+    </div>
 
-    <label for="mode">Re-import mode</label>
-    <select id="mode">
-      <option value="replace-generated">Replace generated content only</option>
-      <option value="append">Append a new generated import</option>
-    </select>
+    <div class="screens-info" id="screens-info">
+      <div class="screens-info-top">
+        <div>
+          <div class="screens-count" id="screens-count">0</div>
+          <div class="screens-count-label">màn hình sẵn sàng vẽ</div>
+        </div>
+        <button class="screens-clear" onclick="clearData()">✕ Xoá</button>
+      </div>
+      <div class="groups-list" id="groups-list"></div>
+    </div>
+
+    <div class="progress-section" id="progress-section">
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="progress-bar"></div>
+      </div>
+      <div class="progress-label">
+        <span class="progress-count" id="progress-count">0</span> / <span id="progress-total">0</span> — <span id="progress-title">Đang chuẩn bị...</span>
+      </div>
+    </div>
+
+    <div class="log-area" id="log-area"></div>
+
+    <div class="success-banner" id="success-banner">
+      ✅ <span id="success-text">Hoàn tất!</span>
+    </div>
+
+    <div style="flex: 1;"></div>
+
+    <div class="footer">
+      <button class="btn-primary" id="btn-draw" onclick="startDraw()" disabled>
+        📲 Vẽ vào Figma
+      </button>
+      <button class="btn-secondary" onclick="parent.postMessage({pluginMessage:{type:'close'}},'*')">Đóng</button>
+    </div>
   </div>
 
-  <div class="card">
-    <strong>Preflight</strong>
-    <div id="status">Choose the contract files to begin.</div>
-    <ul id="summary"></ul>
+  <!-- Tab: Home Screen -->
+  <div class="tab-panel" id="tab-home">
+    <div class="home-tab-content">
+
+      <div class="screen-card">
+        <div class="phone-preview">
+          <div class="phone-screen-preview">
+            <div class="phone-island-mini"></div>
+            <div class="mini-lines">
+              <div class="mini-line" style="width:70%;opacity:0.3;height:3px"></div>
+              <div class="mini-line title">BonVoye</div>
+              <div class="mini-line" style="width:80%;height:3px"></div>
+            </div>
+            <div class="mini-art-bg"></div>
+            <div class="mini-rows">
+              <div class="mini-rowitem sel"></div>
+              <div class="mini-rowitem"></div>
+              <div class="mini-rowitem"></div>
+              <div class="mini-rowitem"></div>
+            </div>
+          </div>
+        </div>
+        <div class="screen-info">
+          <div class="screen-badge">mo-dau · bước 3/12</div>
+          <div class="screen-title">Mở app — chưa chọn gì</div>
+          <div class="screen-desc">Home screen: Hà Nội đã chọn, chưa chọn chủ đề. Nút mờ.</div>
+        </div>
+      </div>
+
+      <ul class="feature-list">
+        <li>Khung điện thoại 393×852 (iPhone 15 Pro)</li>
+        <li>Dynamic Island + Status Bar</li>
+        <li>Nút ngôn ngữ 🌐 Tiếng Việt</li>
+        <li>Hero text — Georgia serif 32px</li>
+        <li>Minh hoạ isometric SVG (art.js)</li>
+        <li>City picker: Hà Nội (selected), Huế (dashed)</li>
+        <li>Topic picker: 2 chủ đề (unselected)</li>
+        <li>Sticky CTA mờ — disabled</li>
+      </ul>
+
+    </div>
+
+    <div class="footer">
+      <button class="btn-primary" id="btn-home" onclick="buildHome()">
+        🏠 Vẽ Home Screen vào Figma
+      </button>
+      <button class="btn-secondary" onclick="parent.postMessage({pluginMessage:{type:'close'}},'*')">Đóng</button>
+    </div>
   </div>
 
-  <div class="actions">
-    <button id="cancel">Cancel</button>
-    <button id="import" disabled>Import into Figma</button>
-  </div>
+</div>
 
 <script>
-(function () {
-  "use strict";
-  var contractInput = document.getElementById("contracts");
-  var visualInput = document.getElementById("visuals");
-  var modeInput = document.getElementById("mode");
-  var scopeInput = document.getElementById("scope");
-  var importButton = document.getElementById("import");
-  var cancelButton = document.getElementById("cancel");
-  var status = document.getElementById("status");
-  var summary = document.getElementById("summary");
-  var selectedFiles = document.getElementById("selected-files");
-  var clearFilesButton = document.getElementById("clear-files");
-  var contractFiles = {};
-  var visualFiles = {};
-  var state = null;
+// ── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
 
-  function cachePayload() { return { contracts: contractFiles }; }
-  function saveCache() {
-    parent.postMessage({ pluginMessage: { type: "save-file-cache", cache: cachePayload() } }, "*");
-  }
-  function applyCache(cache) {
-    cache = cache || {};
-    contractFiles = cache.contracts || {};
-    visualFiles = {};
-    renderSelectedFiles();
-    collect().catch(function (error) { setStatus(error.message || String(error), "error"); });
-  }
+// ── File handling ────────────────────────────────────────────────────────────
+let screens = null;
 
-  function readFile(file) {
-    return new Promise(function (resolve, reject) {
-      var reader = new FileReader();
-      reader.onload = function () { resolve(String(reader.result || "")); };
-      reader.onerror = reject;
-      reader.readAsText(file);
-    });
-  }
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
 
-  function setStatus(message, className) {
-    status.textContent = message;
-    status.className = className || "";
-  }
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) loadFile(e.target.files[0]);
+});
 
-  function baseName(name) { return name.split(/[\\/]/).pop().toLowerCase(); }
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.json')) loadFile(file);
+});
 
-  function parseJson(text, name) {
-    try { return JSON.parse(text); }
-    catch (error) { throw new Error(name + ": " + error.message); }
-  }
-
-  function requiredReady() {
-    return ["design-tokens.json", "components.json", "screens.json", "actions.json", "flows.json"].every(function (name) { return !!contractFiles[name]; });
-  }
-
-  function directText(element) {
-    var result = [];
-    Array.prototype.forEach.call(element.childNodes || [], function (child) {
-      if (child.nodeType === 3 && child.nodeValue.trim()) result.push(child.nodeValue.trim());
-    });
-    return result.join(" ").replace(/\s+/g, " ").trim();
-  }
-
-  function numberValue(value, fallback) {
-    var n = parseFloat(value);
-    return isFinite(n) ? n : fallback;
-  }
-
-  function cssStyle(element, computed) {
-    return {
-      backgroundColor: computed.backgroundColor,
-      color: computed.color,
-      fontSize: computed.fontSize,
-      fontFamily: computed.fontFamily,
-      fontWeight: computed.fontWeight,
-      lineHeight: computed.lineHeight,
-      borderColor: computed.borderTopColor,
-      borderWidth: computed.borderTopWidth,
-      borderRadius: computed.borderRadius,
-      paddingLeft: computed.paddingLeft,
-      paddingTop: computed.paddingTop,
-      display: computed.display,
-      position: computed.position,
-      boxShadow: computed.boxShadow,
-      opacity: computed.opacity,
-      sourceClass: element.className || ""
-    };
-  }
-
-  function htmlNode(element, rootElement, warnings, count) {
-    if (count.value > 500) return null;
-    count.value += 1;
-    var computed = getComputedStyle(element);
-    var rootRect = rootElement.getBoundingClientRect();
-    var rect = element.getBoundingClientRect();
-    var text = directText(element);
-    var meta = {
-      screenId: element.getAttribute("data-bv-screen") || rootElement.getAttribute("data-bv-screen") || null,
-      route: element.getAttribute("data-bv-route") || rootElement.getAttribute("data-bv-route") || null,
-      componentId: element.getAttribute("data-bv-component") || null,
-      variant: element.getAttribute("data-bv-variant") || null,
-      state: element.getAttribute("data-bv-state") || null,
-      testId: element.getAttribute("data-bv-testid") || null,
-      actionId: element.getAttribute("data-bv-action") || null,
-      semanticsLabel: element.getAttribute("aria-label") || null
-    };
-    var node = {
-      tag: element.tagName.toLowerCase(),
-      x: rect.left - rootRect.left,
-      y: rect.top - rootRect.top,
-      width: rect.width,
-      height: rect.height,
-      text: text,
-      style: cssStyle(element, computed),
-      meta: meta,
-      children: []
-    };
-    if (element.tagName.toLowerCase() === "img") {
-      var src = element.getAttribute("src") || "";
-      if (/^https?:\/\//i.test(src)) warnings.push("Skipped remote image: " + src);
-      node.meta.remoteAsset = /^https?:\/\//i.test(src);
-      node.meta.src = src;
-    }
-    Array.prototype.forEach.call(element.children || [], function (child) {
-      if (["SCRIPT", "STYLE", "LINK"].indexOf(child.tagName) >= 0) return;
-      var childNode = htmlNode(child, rootElement, warnings, count);
-      if (childNode) node.children.push(childNode);
-    });
-    return node;
-  }
-
-  function parseHtmlSource(file, text, cssText, warnings) {
-    var parser = new DOMParser();
-    var doc = parser.parseFromString(text.replace(/<script[\s\S]*?<\/script>/gi, ""), "text/html");
-    var sandbox = document.createElement("div");
-    sandbox.style.cssText = "position:absolute;left:-100000px;top:0;width:371px;min-height:830px;overflow:hidden;visibility:hidden;";
-    var style = document.createElement("style");
-    style.textContent = cssText || "";
-    sandbox.appendChild(style);
-    var content = document.createElement("div");
-    content.innerHTML = doc.body ? doc.body.innerHTML : text;
-    sandbox.appendChild(content);
-    document.body.appendChild(sandbox);
-    var roots = content.querySelectorAll("[data-bv-screen]");
-    if (!roots.length) {
-      var fallback = content.firstElementChild || content;
-      roots = [fallback];
-      warnings.push(file.name + ": no data-bv-screen root; imported first element as one screen");
-    }
-    var result = [];
-    Array.prototype.forEach.call(roots, function (rootElement, index) {
-      if (!rootElement) return;
-      var screenId = rootElement.getAttribute("data-bv-screen") || file.name.replace(/\.(html?|HTML?)$/, "") + "." + index;
-      var root = htmlNode(rootElement, rootElement, warnings, { value: 0 });
-      result.push({ screenId: screenId, route: rootElement.getAttribute("data-bv-route") || null, visual: { kind: "html", name: file.name, root: root } });
-    });
-    sandbox.remove();
-    return result;
-  }
-
-  function screenKeyForFile(name, screens) {
-    var stem = name.replace(/\.(svg|SVG)$/, "");
-    var exact = screens.find(function (screen) { return screen.id === stem || screen.route === stem; });
-    if (exact) return exact.id;
-    var normalized = stem.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
-    var match = screens.find(function (screen) {
-      return [screen.id, screen.route].some(function (value) { return String(value).replace(/[^a-z0-9]+/gi, "-").toLowerCase() === normalized; });
-    });
-    return match ? match.id : null;
-  }
-
-  function renderSelectedFiles() {
-    var names = Object.keys(contractFiles).map(function (name) { return "Contract: " + name; })
-      .concat(Object.keys(visualFiles).map(function (name) { return "Visual: " + name; }));
-    selectedFiles.textContent = names.length ? names.join("\n") : "No files selected.";
-  }
-
-  async function collect() {
-    var files = Array.prototype.slice.call(contractInput.files || []);
-    for (var i = 0; i < files.length; i++) contractFiles[baseName(files[i].name)] = await readFile(files[i]);
-    var visualList = Array.prototype.slice.call(visualInput.files || []);
-    visualFiles = {};
-    for (var j = 0; j < visualList.length; j++) {
-      var visual = visualList[j];
-      var type = visual.name.split(".").pop().toLowerCase();
-      if (["html", "htm", "svg", "css"].indexOf(type) < 0) continue;
-      visualFiles[baseName(visual.name)] = { name: visual.webkitRelativePath || visual.name, type: type, text: await readFile(visual) };
-    }
-    renderSelectedFiles();
-    if (!requiredReady()) {
-      state = null;
-      importButton.disabled = true;
-      setStatus("Select all five required contract JSON files.", "warn");
-      summary.innerHTML = "";
-      return;
-    }
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
     try {
-      var data = {
-        tokens: parseJson(contractFiles["design-tokens.json"], "design-tokens.json"),
-        components: parseJson(contractFiles["components.json"], "components.json"),
-        screens: parseJson(contractFiles["screens.json"], "screens.json"),
-        actions: parseJson(contractFiles["actions.json"], "actions.json"),
-        flows: parseJson(contractFiles["flows.json"], "flows.json"),
-        config: contractFiles["figma-import.json"] ? parseJson(contractFiles["figma-import.json"], "figma-import.json") : null,
-        visuals: {}
-      };
-      var warnings = [];
-      var visualList = Object.keys(visualFiles).map(function (name) { return visualFiles[name]; });
-      var cssText = visualList.filter(function (file) { return file.type === "css"; }).map(function (file) { return file.text; }).join("\\n");
-      visualList.filter(function (file) { return file.type === "html" || file.type === "htm"; }).forEach(function (file) {
-        parseHtmlSource(file, file.text, cssText, warnings).forEach(function (item) { data.visuals[item.screenId] = item.visual; });
-      });
-      visualList.filter(function (file) { return file.type === "svg"; }).forEach(function (file) {
-        var screenId = screenKeyForFile(file.name, data.screens.screens);
-        if (!screenId) warnings.push(file.name + ": could not match SVG filename to a screen id or route");
-        else data.visuals[screenId] = { kind: "svg", name: file.name, content: file.text };
-      });
-      data.screens.screens.forEach(function (screen) { if (data.visuals[screen.id]) screen.visual = data.visuals[screen.id]; });
-      state = { data: data, warnings: warnings };
-      importButton.disabled = false;
-      setStatus("Ready to import.", "ok");
-      summary.innerHTML = "";
-      [
-        data.screens.screens.length + " screen contracts",
-        data.components.components.length + " component contracts",
-        data.actions.actions.length + " actions",
-        data.flows.flows.length + " flows",
-        Object.keys(data.visuals).length + " matched visual sources",
-        warnings.length + " warnings"
-      ].forEach(function (text) { var li = document.createElement("li"); li.textContent = text; summary.appendChild(li); });
-      if (warnings.length) setStatus("Ready with warnings:\\n" + warnings.slice(0, 5).join("\\n"), "warn");
-    } catch (error) {
-      state = null;
-      importButton.disabled = true;
-      setStatus(error.message || String(error), "error");
-    }
-  }
-
-  contractInput.addEventListener("change", collect);
-  visualInput.addEventListener("change", collect);
-  clearFilesButton.addEventListener("click", function () {
-    contractFiles = {};
-    visualFiles = {};
-    state = null;
-    contractInput.value = "";
-    visualInput.value = "";
-    renderSelectedFiles();
-    importButton.disabled = true;
-    summary.innerHTML = "";
-    setStatus("Choose the contract and visual files to begin.", "");
-    saveCache();
-  });
-  importButton.addEventListener("click", function () {
-    if (!state) return;
-    importButton.disabled = true;
-    setStatus("Importing…", "ok");
-    parent.postMessage({ pluginMessage: { type: "import", data: state.data, mode: modeInput.value, scope: scopeInput.value } }, "*");
-  });
-  cancelButton.addEventListener("click", function () { parent.postMessage({ pluginMessage: { type: "cancel" } }, "*"); });
-
-  window.onmessage = function (event) {
-    var message = event.data.pluginMessage;
-    if (!message) return;
-    if (message.type === "file-cache") applyCache(message.cache);
-    if (message.type === "file-cache-error") setStatus("Could not load saved files: " + message.message, "warn");
-    if (message.type === "progress") setStatus(message.message, "ok");
-    if (message.type === "error") { setStatus(message.message, "error"); importButton.disabled = false; }
-    if (message.type === "done") {
-      setStatus("Import complete.\\n" + message.summary.screens + " screens · " + message.summary.components + " components · " + message.summary.visualSources + " visual sources", "ok");
-      importButton.disabled = false;
+      screens = JSON.parse(e.target.result);
+      showScreensInfo(screens);
+    } catch (err) {
+      alert('❌ Không đọc được JSON: ' + err.message);
     }
   };
-})();
+  reader.readAsText(file);
+}
+
+function showScreensInfo(data) {
+  document.getElementById('screens-count').textContent = data.length;
+  document.getElementById('screens-info').classList.add('visible');
+  document.getElementById('btn-draw').disabled = false;
+
+  // Groups
+  const groups = {};
+  data.forEach(s => { groups[s.group] = (groups[s.group] || 0) + 1; });
+  const gl = document.getElementById('groups-list');
+  gl.innerHTML = Object.entries(groups).map(([g, n]) =>
+    `<span class="group-chip">${g} (${n})</span>`
+  ).join('');
+
+  // Hide drop zone on success load
+  dropZone.style.display = 'none';
+}
+
+function clearData() {
+  screens = null;
+  document.getElementById('screens-info').classList.remove('visible');
+  document.getElementById('btn-draw').disabled = true;
+  dropZone.style.display = '';
+  fileInput.value = '';
+  document.getElementById('success-banner').classList.remove('visible');
+  document.getElementById('progress-section').classList.remove('visible');
+  document.getElementById('log-area').classList.remove('visible');
+  document.getElementById('log-area').textContent = '';
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function startDraw() {
+  if (!screens) return;
+  document.getElementById('btn-draw').disabled = true;
+  document.getElementById('btn-draw').textContent = '⏳ Đang vẽ...';
+  document.getElementById('progress-section').classList.add('visible');
+  document.getElementById('log-area').classList.add('visible');
+  document.getElementById('progress-total').textContent = screens.length;
+
+  parent.postMessage({ pluginMessage: { type: 'draw-all-screens', screens } }, '*');
+}
+
+// ── Home screen ──────────────────────────────────────────────────────────────
+function buildHome() {
+  document.getElementById('btn-home').disabled = true;
+  document.getElementById('btn-home').textContent = '⏳ Đang vẽ...';
+  parent.postMessage({ pluginMessage: { type: 'build-home' } }, '*');
+}
+
+// ── Messages from plugin ─────────────────────────────────────────────────────
+window.onmessage = (e) => {
+  const msg = e.data.pluginMessage;
+  if (!msg) return;
+
+  if (msg.type === 'progress') {
+    const pct = Math.round((msg.current / msg.total) * 100);
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('progress-count').textContent = msg.current;
+    document.getElementById('progress-title').textContent = msg.title || '';
+    const log = document.getElementById('log-area');
+    log.textContent += `[${msg.current}/${msg.total}] ${msg.title}\n`;
+    log.scrollTop = log.scrollHeight;
+  }
+
+  if (msg.type === 'done') {
+    if (msg.count != null) {
+      document.getElementById('btn-draw').textContent = '📲 Vẽ lại';
+      document.getElementById('btn-draw').disabled = false;
+      document.getElementById('progress-bar').style.width = '100%';
+      const banner = document.getElementById('success-banner');
+      banner.classList.add('visible');
+      document.getElementById('success-text').textContent =
+        `Đã vẽ ${msg.count} màn hình vào page "BonVoye Mockups"!`;
+    } else {
+      document.getElementById('btn-home').disabled = false;
+      document.getElementById('btn-home').textContent = '🏠 Vẽ lại';
+    }
+  }
+
+  if (msg.type === 'error') {
+    const log = document.getElementById('log-area');
+    log.style.color = '#ff7070';
+    log.textContent += '❌ ' + msg.message + '\n';
+    log.classList.add('visible');
+    document.getElementById('btn-draw').disabled = false;
+    document.getElementById('btn-draw').textContent = '📲 Vẽ vào Figma';
+    document.getElementById('btn-home').disabled = false;
+    document.getElementById('btn-home').textContent = '🏠 Vẽ Home Screen';
+  }
+};
 </script>
 </body>
 </html>
