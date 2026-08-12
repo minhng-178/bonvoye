@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1.0.0",
+  "product": "BonVoye",
+  "sourceRoot": "../spec",
+  "pageNames": {
+    "tokens": "BonVoye • Tokens",
+    "components": "BonVoye • Components",
+    "screens": "BonVoye • Screens"
+  },
+  "viewport": {
+    "outerWidth": 393,
+    "outerHeight": 852,
+    "screenWidth": 371,
+    "screenHeight": 830,
+    "statusBarHeight": 50,
+    "homeIndicatorWidth": 134,
+    "homeIndicatorHeight": 5,
+    "homeIndicatorBottom": 7,
+    "screenInset": 11
+  },
+  "screenGrid": {
+    "columns": 4,
+    "columnGap": 56,
+    "rowGap": 72,
+    "labelHeight": 118
+  },
+  "supportedVisualSources": ["contract-placeholder", "html", "svg"],
+  "remoteAssets": "warn-and-skip",
+  "reimportModes": ["append", "replace-generated"]
+}

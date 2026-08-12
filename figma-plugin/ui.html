@@ -1,0 +1,343 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    :root { color-scheme: light dark; font: 13px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; padding: 18px; color: var(--figma-color-text); background: var(--figma-color-bg); }
+    h1 { margin: 0 0 6px; font-size: 20px; }
+    p { color: var(--figma-color-text-secondary); line-height: 1.45; }
+    .card { border: 1px solid var(--figma-color-border); border-radius: 10px; padding: 12px; margin: 12px 0; }
+    label { display: block; font-weight: 600; margin: 10px 0 5px; }
+    input[type=file] { width: 100%; }
+    select, button { font: inherit; }
+    select { width: 100%; padding: 8px; border: 1px solid var(--figma-color-border); border-radius: 6px; background: var(--figma-color-bg); color: var(--figma-color-text); }
+    button { border: 0; border-radius: 7px; padding: 9px 14px; cursor: pointer; }
+    #import { background: #b4472b; color: #fff; font-weight: 700; }
+    #cancel { background: var(--figma-color-bg-secondary); color: var(--figma-color-text); }
+    .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+    .file-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; }
+    .file-toolbar button { padding: 5px 8px; background: var(--figma-color-bg-secondary); color: var(--figma-color-text); }
+    .selected-files { white-space: pre-wrap; max-height: 110px; overflow: auto; margin-top: 7px; color: var(--figma-color-text-secondary); font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; }
+    #status { white-space: pre-wrap; min-height: 44px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+    .ok { color: #4f8a5b; } .warn { color: #c98a3c; } .error { color: #c0392b; }
+    ul { margin: 7px 0 0; padding-left: 18px; color: var(--figma-color-text-secondary); }
+    small { color: var(--figma-color-text-secondary); }
+  </style>
+</head>
+<body>
+  <h1>BonVoye Spec Importer</h1>
+  <p>Select the prototype contracts to create up to three editable Figma pages. Metadata is appended to the Screens page. HTML and SVG files are optional visual sources; contract-only screens are labeled placeholders.</p>
+
+  <div class="card">
+    <label for="contracts">Contract JSON files</label>
+    <input id="contracts" type="file" multiple accept=".json,application/json">
+    <small>Required: design-tokens.json, components.json, screens.json, actions.json, flows.json. Optional: figma-import.json.</small>
+
+    <label for="visuals">Visual source folder</label>
+    <input id="visuals" type="file" webkitdirectory directory multiple>
+    <small>Select one folder containing <b>figma-visual-sources.html</b> and all CSS files. The folder is imported as one visual batch; unsupported files are ignored.</small>
+
+    <div class="file-toolbar"><strong>Selected files</strong><button id="clear-files" type="button">Clear selected files</button></div>
+    <div id="selected-files" class="selected-files">No files selected.</div>
+
+    <label for="scope">Import scope</label>
+    <select id="scope">
+      <option value="spec">Spec only — tokens, components, screens</option>
+      <option value="visual">Visual only — replace screen visuals</option>
+      <option value="all">Spec + visual</option>
+    </select>
+
+    <label for="mode">Re-import mode</label>
+    <select id="mode">
+      <option value="replace-generated">Replace generated content only</option>
+      <option value="append">Append a new generated import</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <strong>Preflight</strong>
+    <div id="status">Choose the contract files to begin.</div>
+    <ul id="summary"></ul>
+  </div>
+
+  <div class="actions">
+    <button id="cancel">Cancel</button>
+    <button id="import" disabled>Import into Figma</button>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+  var contractInput = document.getElementById("contracts");
+  var visualInput = document.getElementById("visuals");
+  var modeInput = document.getElementById("mode");
+  var scopeInput = document.getElementById("scope");
+  var importButton = document.getElementById("import");
+  var cancelButton = document.getElementById("cancel");
+  var status = document.getElementById("status");
+  var summary = document.getElementById("summary");
+  var selectedFiles = document.getElementById("selected-files");
+  var clearFilesButton = document.getElementById("clear-files");
+  var contractFiles = {};
+  var visualFiles = {};
+  var state = null;
+
+  function cachePayload() { return { contracts: contractFiles }; }
+  function saveCache() {
+    parent.postMessage({ pluginMessage: { type: "save-file-cache", cache: cachePayload() } }, "*");
+  }
+  function applyCache(cache) {
+    cache = cache || {};
+    contractFiles = cache.contracts || {};
+    visualFiles = {};
+    renderSelectedFiles();
+    collect().catch(function (error) { setStatus(error.message || String(error), "error"); });
+  }
+
+  function readFile(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(String(reader.result || "")); };
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  }
+
+  function setStatus(message, className) {
+    status.textContent = message;
+    status.className = className || "";
+  }
+
+  function baseName(name) { return name.split(/[\\/]/).pop().toLowerCase(); }
+
+  function parseJson(text, name) {
+    try { return JSON.parse(text); }
+    catch (error) { throw new Error(name + ": " + error.message); }
+  }
+
+  function requiredReady() {
+    return ["design-tokens.json", "components.json", "screens.json", "actions.json", "flows.json"].every(function (name) { return !!contractFiles[name]; });
+  }
+
+  function directText(element) {
+    var result = [];
+    Array.prototype.forEach.call(element.childNodes || [], function (child) {
+      if (child.nodeType === 3 && child.nodeValue.trim()) result.push(child.nodeValue.trim());
+    });
+    return result.join(" ").replace(/\s+/g, " ").trim();
+  }
+
+  function numberValue(value, fallback) {
+    var n = parseFloat(value);
+    return isFinite(n) ? n : fallback;
+  }
+
+  function cssStyle(element, computed) {
+    return {
+      backgroundColor: computed.backgroundColor,
+      color: computed.color,
+      fontSize: computed.fontSize,
+      fontFamily: computed.fontFamily,
+      fontWeight: computed.fontWeight,
+      lineHeight: computed.lineHeight,
+      borderColor: computed.borderTopColor,
+      borderWidth: computed.borderTopWidth,
+      borderRadius: computed.borderRadius,
+      paddingLeft: computed.paddingLeft,
+      paddingTop: computed.paddingTop,
+      display: computed.display,
+      position: computed.position,
+      boxShadow: computed.boxShadow,
+      opacity: computed.opacity,
+      sourceClass: element.className || ""
+    };
+  }
+
+  function htmlNode(element, rootElement, warnings, count) {
+    if (count.value > 500) return null;
+    count.value += 1;
+    var computed = getComputedStyle(element);
+    var rootRect = rootElement.getBoundingClientRect();
+    var rect = element.getBoundingClientRect();
+    var text = directText(element);
+    var meta = {
+      screenId: element.getAttribute("data-bv-screen") || rootElement.getAttribute("data-bv-screen") || null,
+      route: element.getAttribute("data-bv-route") || rootElement.getAttribute("data-bv-route") || null,
+      componentId: element.getAttribute("data-bv-component") || null,
+      variant: element.getAttribute("data-bv-variant") || null,
+      state: element.getAttribute("data-bv-state") || null,
+      testId: element.getAttribute("data-bv-testid") || null,
+      actionId: element.getAttribute("data-bv-action") || null,
+      semanticsLabel: element.getAttribute("aria-label") || null
+    };
+    var node = {
+      tag: element.tagName.toLowerCase(),
+      x: rect.left - rootRect.left,
+      y: rect.top - rootRect.top,
+      width: rect.width,
+      height: rect.height,
+      text: text,
+      style: cssStyle(element, computed),
+      meta: meta,
+      children: []
+    };
+    if (element.tagName.toLowerCase() === "img") {
+      var src = element.getAttribute("src") || "";
+      if (/^https?:\/\//i.test(src)) warnings.push("Skipped remote image: " + src);
+      node.meta.remoteAsset = /^https?:\/\//i.test(src);
+      node.meta.src = src;
+    }
+    Array.prototype.forEach.call(element.children || [], function (child) {
+      if (["SCRIPT", "STYLE", "LINK"].indexOf(child.tagName) >= 0) return;
+      var childNode = htmlNode(child, rootElement, warnings, count);
+      if (childNode) node.children.push(childNode);
+    });
+    return node;
+  }
+
+  function parseHtmlSource(file, text, cssText, warnings) {
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(text.replace(/<script[\s\S]*?<\/script>/gi, ""), "text/html");
+    var sandbox = document.createElement("div");
+    sandbox.style.cssText = "position:absolute;left:-100000px;top:0;width:371px;min-height:830px;overflow:hidden;visibility:hidden;";
+    var style = document.createElement("style");
+    style.textContent = cssText || "";
+    sandbox.appendChild(style);
+    var content = document.createElement("div");
+    content.innerHTML = doc.body ? doc.body.innerHTML : text;
+    sandbox.appendChild(content);
+    document.body.appendChild(sandbox);
+    var roots = content.querySelectorAll("[data-bv-screen]");
+    if (!roots.length) {
+      var fallback = content.firstElementChild || content;
+      roots = [fallback];
+      warnings.push(file.name + ": no data-bv-screen root; imported first element as one screen");
+    }
+    var result = [];
+    Array.prototype.forEach.call(roots, function (rootElement, index) {
+      if (!rootElement) return;
+      var screenId = rootElement.getAttribute("data-bv-screen") || file.name.replace(/\.(html?|HTML?)$/, "") + "." + index;
+      var root = htmlNode(rootElement, rootElement, warnings, { value: 0 });
+      result.push({ screenId: screenId, route: rootElement.getAttribute("data-bv-route") || null, visual: { kind: "html", name: file.name, root: root } });
+    });
+    sandbox.remove();
+    return result;
+  }
+
+  function screenKeyForFile(name, screens) {
+    var stem = name.replace(/\.(svg|SVG)$/, "");
+    var exact = screens.find(function (screen) { return screen.id === stem || screen.route === stem; });
+    if (exact) return exact.id;
+    var normalized = stem.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+    var match = screens.find(function (screen) {
+      return [screen.id, screen.route].some(function (value) { return String(value).replace(/[^a-z0-9]+/gi, "-").toLowerCase() === normalized; });
+    });
+    return match ? match.id : null;
+  }
+
+  function renderSelectedFiles() {
+    var names = Object.keys(contractFiles).map(function (name) { return "Contract: " + name; })
+      .concat(Object.keys(visualFiles).map(function (name) { return "Visual: " + name; }));
+    selectedFiles.textContent = names.length ? names.join("\n") : "No files selected.";
+  }
+
+  async function collect() {
+    var files = Array.prototype.slice.call(contractInput.files || []);
+    for (var i = 0; i < files.length; i++) contractFiles[baseName(files[i].name)] = await readFile(files[i]);
+    var visualList = Array.prototype.slice.call(visualInput.files || []);
+    visualFiles = {};
+    for (var j = 0; j < visualList.length; j++) {
+      var visual = visualList[j];
+      var type = visual.name.split(".").pop().toLowerCase();
+      if (["html", "htm", "svg", "css"].indexOf(type) < 0) continue;
+      visualFiles[baseName(visual.name)] = { name: visual.webkitRelativePath || visual.name, type: type, text: await readFile(visual) };
+    }
+    renderSelectedFiles();
+    if (!requiredReady()) {
+      state = null;
+      importButton.disabled = true;
+      setStatus("Select all five required contract JSON files.", "warn");
+      summary.innerHTML = "";
+      return;
+    }
+    try {
+      var data = {
+        tokens: parseJson(contractFiles["design-tokens.json"], "design-tokens.json"),
+        components: parseJson(contractFiles["components.json"], "components.json"),
+        screens: parseJson(contractFiles["screens.json"], "screens.json"),
+        actions: parseJson(contractFiles["actions.json"], "actions.json"),
+        flows: parseJson(contractFiles["flows.json"], "flows.json"),
+        config: contractFiles["figma-import.json"] ? parseJson(contractFiles["figma-import.json"], "figma-import.json") : null,
+        visuals: {}
+      };
+      var warnings = [];
+      var visualList = Object.keys(visualFiles).map(function (name) { return visualFiles[name]; });
+      var cssText = visualList.filter(function (file) { return file.type === "css"; }).map(function (file) { return file.text; }).join("\\n");
+      visualList.filter(function (file) { return file.type === "html" || file.type === "htm"; }).forEach(function (file) {
+        parseHtmlSource(file, file.text, cssText, warnings).forEach(function (item) { data.visuals[item.screenId] = item.visual; });
+      });
+      visualList.filter(function (file) { return file.type === "svg"; }).forEach(function (file) {
+        var screenId = screenKeyForFile(file.name, data.screens.screens);
+        if (!screenId) warnings.push(file.name + ": could not match SVG filename to a screen id or route");
+        else data.visuals[screenId] = { kind: "svg", name: file.name, content: file.text };
+      });
+      data.screens.screens.forEach(function (screen) { if (data.visuals[screen.id]) screen.visual = data.visuals[screen.id]; });
+      state = { data: data, warnings: warnings };
+      importButton.disabled = false;
+      setStatus("Ready to import.", "ok");
+      summary.innerHTML = "";
+      [
+        data.screens.screens.length + " screen contracts",
+        data.components.components.length + " component contracts",
+        data.actions.actions.length + " actions",
+        data.flows.flows.length + " flows",
+        Object.keys(data.visuals).length + " matched visual sources",
+        warnings.length + " warnings"
+      ].forEach(function (text) { var li = document.createElement("li"); li.textContent = text; summary.appendChild(li); });
+      if (warnings.length) setStatus("Ready with warnings:\\n" + warnings.slice(0, 5).join("\\n"), "warn");
+    } catch (error) {
+      state = null;
+      importButton.disabled = true;
+      setStatus(error.message || String(error), "error");
+    }
+  }
+
+  contractInput.addEventListener("change", collect);
+  visualInput.addEventListener("change", collect);
+  clearFilesButton.addEventListener("click", function () {
+    contractFiles = {};
+    visualFiles = {};
+    state = null;
+    contractInput.value = "";
+    visualInput.value = "";
+    renderSelectedFiles();
+    importButton.disabled = true;
+    summary.innerHTML = "";
+    setStatus("Choose the contract and visual files to begin.", "");
+    saveCache();
+  });
+  importButton.addEventListener("click", function () {
+    if (!state) return;
+    importButton.disabled = true;
+    setStatus("Importing…", "ok");
+    parent.postMessage({ pluginMessage: { type: "import", data: state.data, mode: modeInput.value, scope: scopeInput.value } }, "*");
+  });
+  cancelButton.addEventListener("click", function () { parent.postMessage({ pluginMessage: { type: "cancel" } }, "*"); });
+
+  window.onmessage = function (event) {
+    var message = event.data.pluginMessage;
+    if (!message) return;
+    if (message.type === "file-cache") applyCache(message.cache);
+    if (message.type === "file-cache-error") setStatus("Could not load saved files: " + message.message, "warn");
+    if (message.type === "progress") setStatus(message.message, "ok");
+    if (message.type === "error") { setStatus(message.message, "error"); importButton.disabled = false; }
+    if (message.type === "done") {
+      setStatus("Import complete.\\n" + message.summary.screens + " screens · " + message.summary.components + " components · " + message.summary.visualSources + " visual sources", "ok");
+      importButton.disabled = false;
+    }
+  };
+})();
+</script>
+</body>
+</html>

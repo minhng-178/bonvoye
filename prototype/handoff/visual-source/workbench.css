@@ -1,0 +1,2 @@
+/* Workbench-specific additions. Legacy rail/stage/inspector rules remain in app.css. */
+.bv-gallery-note { color: var(--bench-fg-dim); font-size: 11px; line-height: 1.5; }

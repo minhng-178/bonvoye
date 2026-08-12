@@ -1,0 +1,66 @@
+/* New reusable component layer. Legacy selectors remain in app.css for compatibility. */
+.bv-icon { display: inline-flex; width: 18px; height: 18px; align-items: center; justify-content: center; flex: 0 0 auto; }
+.bv-icon svg { width: 100%; height: 100%; display: block; }
+.bv-icon-button { width: 34px; height: 34px; display: inline-grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); color: var(--ink); }
+.bv-icon-button .bv-icon { width: 17px; height: 17px; }
+.bv-card { box-shadow: var(--shadow-card); }
+.bv-row { text-decoration: none; color: inherit; }
+.bv-row-meta { display: block; margin-top: 4px; color: var(--ink-45); font-size: 10.5px; }
+.bv-section { margin-bottom: var(--space-5); }
+.bv-section > .eyebrow { display: block; margin-bottom: var(--space-2); }
+.bv-progress { margin-top: var(--space-2); }
+.bv-field { display: flex; flex-direction: column; gap: var(--space-2); }
+.bv-field .form-input { min-height: 46px; padding: 0 13px; border: 1px solid var(--line); border-radius: var(--r-m); background: #fff; }
+.bv-price { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap; }
+.bv-price b { color: var(--terracotta); font-size: 15px; }
+.bv-price span { color: var(--ink-45); font-size: 10px; }
+.bv-empty { padding: 42px 18px; }
+.bv-empty span { display: block; max-width: 245px; margin: 7px auto 0; font-size: 11px; line-height: 1.45; color: var(--ink-45); }
+.bv-sheet-subtitle { margin-top: 4px; max-width: 260px; }
+.bv-option { position: relative; }
+.bv-option.recommended { border-color: var(--terracotta); box-shadow: 0 0 0 1px var(--terracotta) inset, var(--shadow-card); }
+.bv-option.recommended::before { content: "Gợi ý"; position: absolute; top: -9px; right: 12px; padding: 3px 8px; border-radius: 10px; background: var(--terracotta); color: #fff8ef; font-size: 9px; font-weight: 700; }
+.bv-option .chip { margin-bottom: 7px; }
+.bv-searchbar { display: flex; align-items: center; gap: 9px; min-height: 48px; padding: 0 13px; border: 1px solid var(--line); border-radius: var(--r-m); background: #fff; color: var(--ink-45); }
+.bv-searchbar .bv-icon { width: 18px; height: 18px; }
+.bv-searchbar input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; }
+.bv-filter-row { display: flex; gap: 7px; overflow-x: auto; padding: 2px 0 4px; scrollbar-width: none; }
+.bv-filter-row::-webkit-scrollbar { display: none; }
+.bv-result-group { margin-top: 18px; }
+.bv-result-group > .eyebrow { display: block; margin-bottom: 8px; }
+.bv-result-list { display: flex; flex-direction: column; gap: 8px; }
+.bv-poi-hero { position: relative; min-height: 152px; overflow: hidden; padding: 18px; border-radius: var(--r-l); background: linear-gradient(145deg, #243e45, #8d593a); color: #fff; }
+.bv-poi-hero::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 80% 15%, rgba(255,255,255,.25), transparent 38%), linear-gradient(transparent, rgba(17, 20, 21, .55)); pointer-events: none; }
+.bv-poi-hero > * { position: relative; z-index: 1; }
+.bv-poi-hero .eyebrow { color: rgba(255,255,255,.7); }
+.bv-poi-hero .h2 { max-width: 250px; margin-top: 8px; }
+.bv-detail-stat { display: flex; align-items: center; gap: 7px; color: var(--ink-70); font-size: 11px; }
+.bv-detail-stat + .bv-detail-stat { margin-left: 14px; }
+.bv-stat-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 0; margin-top: 12px; }
+.bv-story-row .ic { width: 40px; height: 40px; }
+.bv-story-row .ic svg { width: 100%; height: 100%; }
+.bv-lock-callout { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1px solid #e6cb9a; border-radius: var(--r-m); background: #fdf1dd; color: #6e501c; }
+.bv-lock-callout .bv-icon { margin-top: 1px; }
+.bv-route-map { position: relative; min-height: 142px; overflow: hidden; border-radius: var(--r-l); background: linear-gradient(145deg, #d9e3dc, #b6c6bc); }
+.bv-route-map::before { content: ""; position: absolute; left: 18%; right: 13%; top: 48%; height: 3px; transform: rotate(-12deg); background: var(--terracotta); box-shadow: 0 0 0 4px rgba(180,71,43,.12); }
+.bv-route-map-real { height: 158px; min-height: 0; background: #d8e0da; box-shadow: inset 0 0 0 1px rgba(36,28,22,.08); }
+.bv-route-map-real::before { display: none; }
+.bv-route-map-real .mm { position: absolute; inset: 0; }
+.bv-route-stop { position: absolute; width: 25px; height: 25px; display: grid; place-items: center; border: 2px solid #fff; border-radius: 50%; background: var(--terracotta); color: #fff; font-size: 10px; font-weight: 700; box-shadow: 0 2px 7px rgba(36,28,22,.2); }
+.bv-route-stop.one { left: 16%; top: 57%; }
+.bv-route-stop.two { left: 45%; top: 43%; }
+.bv-route-stop.three { right: 16%; top: 30%; }
+.bv-route-list { display: flex; flex-direction: column; gap: 7px; }
+.bv-route-list .rowbtn { position: relative; }
+.bv-route-list .rowbtn + .rowbtn::before { content: ""; position: absolute; left: 28px; top: -8px; width: 1px; height: 8px; background: var(--line); }
+.bv-duration-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.bv-duration { padding: 12px 6px; border: 1px solid var(--line); border-radius: var(--r-m); background: var(--paper); text-align: center; }
+.bv-duration.on { border-color: var(--terracotta); box-shadow: 0 0 0 1px var(--terracotta) inset; background: #fdf4ee; }
+.bv-duration b, .bv-duration span { display: block; }
+.bv-duration b { color: var(--ink); font-size: 13px; }
+.bv-duration span { margin-top: 3px; color: var(--ink-45); font-size: 10px; }
+.bv-success-mark { width: 58px; height: 58px; display: grid; place-items: center; margin: 8px auto 16px; border-radius: 50%; background: #e7f2e8; color: var(--ok); }
+.bv-success-mark .bv-icon { width: 28px; height: 28px; }
+.bv-processing { display: grid; place-items: center; min-height: 160px; color: var(--ink-45); text-align: center; }
+.bv-processing .loader { width: 34px; height: 34px; margin-bottom: 11px; border: 3px solid var(--cream-d); border-top-color: var(--terracotta); border-radius: 50%; animation: bv-spin .8s linear infinite; }
+@keyframes bv-spin { to { transform: rotate(360deg); } }

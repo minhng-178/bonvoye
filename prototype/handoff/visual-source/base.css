@@ -1,0 +1,5 @@
+/* Shared base layer. Existing app.css owns the legacy phone shell during migration. */
+html { color-scheme: light; }
+button, a, input { -webkit-tap-highlight-color: transparent; }
+a { color: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid rgba(180,71,43,.42); outline-offset: 2px; }

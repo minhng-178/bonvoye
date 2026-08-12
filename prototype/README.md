@@ -75,6 +75,31 @@ Static fixture chỉ mô tả trạng thái để review; logic production vẫn
 
 ---
 
+## Figma handoff — tạo file Figma editable
+
+Repo có một Figma development plugin tại `../figma-plugin/`. Plugin không cố tạo file `.fig` trực tiếp — Figma quản lý định dạng native đó — mà tạo một document editable từ các contract hiện có:
+
+```bash
+node tools/validate-figma-import.js
+```
+
+Trong Figma desktop: **Plugins → Development → Import plugin from manifest...**, chọn `../figma-plugin/manifest.json`, rồi chạy plugin và chọn các file:
+
+- `spec/design-tokens.json`
+- `spec/components.json`
+- `spec/screens.json`
+- `spec/actions.json`
+- `spec/flows.json`
+- `spec/figma-import.json` (tuỳ chọn)
+
+Plugin tạo tối đa ba page `BonVoye • Tokens`, `BonVoye • Components` và `BonVoye • Screens`. Actions và flow coverage nằm trong một metadata section ở cuối page `BonVoye • Screens`. Screen frame có kích thước 393×852 và giữ metadata `data-bv-*` dưới dạng plugin data `bv.*` để designer hoặc engineer truy ngược về route, component, action và state.
+
+`spec/screens.json` mô tả contract và hành vi, không chứa toàn bộ DOM render của mỗi màn. Vì vậy screen không có visual source sẽ hiện dạng contract placeholder editable. Muốn giữ hình ảnh chi tiết hơn, chọn thêm HTML snapshot tĩnh có root `data-bv-screen`, SVG local đặt tên theo screen ID/route, và CSS local tương ứng. Plugin không tải tile OpenStreetMap, font ngoài hoặc ảnh remote.
+
+Xem hướng dẫn đầy đủ tại `../figma-plugin/README.md`.
+
+---
+
 ## `flow.html` — bản để quay video
 
 ```

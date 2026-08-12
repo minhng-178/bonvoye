@@ -4,6 +4,10 @@
   "dispatchPattern": "Widget callback -> actionId + payload -> state transition -> route/render",
   "actions": [
     { "id": "startApp", "category": "navigation", "payload": {}, "sideEffects": [], "failure": "stayOnCurrentScreen" },
+    { "id": "continueLogin", "category": "navigation", "payload": {}, "route": "01-home" },
+    { "id": "skipLogin", "category": "navigation", "payload": {}, "route": "01-home" },
+    { "id": "recenterMap", "category": "map", "payload": {}, "sideEffects": ["recenterMap"] },
+    { "id": "toggleMapLayer", "category": "map", "payload": { "layer": "artwork|realMap|hybrid" }, "sideEffects": ["updateMapLayer"] },
     { "id": "selectCity", "category": "selection", "payload": { "cityId": "string" }, "sideEffects": ["updateHomeSelection"] },
     { "id": "selectTopic", "category": "selection", "payload": { "topicId": "string" }, "sideEffects": ["updateHomeSelection"] },
     { "id": "startExploring", "category": "navigation", "payload": {}, "route": "03-permission", "guards": ["citySelected", "topicSelected"] },
